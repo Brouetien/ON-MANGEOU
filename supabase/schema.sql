@@ -27,18 +27,59 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Sécurité RLS Profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- Helper sécurisé pour vérifier le rôle admin sans récursion RLS (SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+
+-- Policies RLS Profiles
 CREATE POLICY "Les utilisateurs peuvent lire leur propre profil"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
-CREATE POLICY "Les administrateurs peuvent tout lire"
+CREATE POLICY "Les utilisateurs peuvent mettre a jour leur propre profil"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Les administrateurs ont plein acces aux profils"
   ON public.profiles FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- Trigger automatique de création de profil lors de l'inscription auth.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, role)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE((NEW.raw_user_meta_data->>'role')::public.user_role, 'public'::public.user_role)
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ---------------------------------------------------------------------
 -- 4. Table des Étals Vendeurs (Stalls) avec Coordonnées Spatiales PostGIS
@@ -94,15 +135,11 @@ CREATE POLICY "Vendeur peut insérer son étal"
   ON public.stalls FOR INSERT
   WITH CHECK (seller_id = auth.uid());
 
--- Règle Admin : Accès panoptique complet
+-- Règle Admin : Accès panoptique complet (utilisant is_admin() pour éviter la récursion)
 CREATE POLICY "Admin a plein accès aux étals"
   ON public.stalls FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 -- ---------------------------------------------------------------------
 -- 5. Catalogue Officiel des Spécialités d'Abidjan
@@ -120,9 +157,15 @@ CREATE TABLE IF NOT EXISTS public.dishes (
 );
 
 ALTER TABLE public.dishes ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY "Catalogue public en lecture seule"
   ON public.dishes FOR SELECT
   USING (true);
+
+CREATE POLICY "Admin peut gérer les spécialités du catalogue"
+  ON public.dishes FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 -- ---------------------------------------------------------------------
 -- 6. Régie Publicitaire & Minuteur Sponsors B2B
@@ -141,18 +184,15 @@ CREATE TABLE IF NOT EXISTS public.ad_campaigns (
 );
 
 ALTER TABLE public.ad_campaigns ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY "Lecture publique des pubs actives"
   ON public.ad_campaigns FOR SELECT
   USING (is_active = true AND NOW() BETWEEN starts_at AND ends_at);
 
 CREATE POLICY "Admin gère les campagnes de pub"
   ON public.ad_campaigns FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 -- ---------------------------------------------------------------------
 -- 7. Statistiques & Télémétrie des Recherches par Quartier
@@ -165,21 +205,68 @@ CREATE TABLE IF NOT EXISTS public.search_logs (
 );
 
 ALTER TABLE public.search_logs ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY "Insertion publique anonyme des logs de recherche"
   ON public.search_logs FOR INSERT
   WITH CHECK (true);
 
 CREATE POLICY "Admin consulte les statistiques de recherche"
   ON public.search_logs FOR SELECT
+  USING (public.is_admin());
+
+-- ---------------------------------------------------------------------
+-- 8. Configuration Supabase Storage & RLS des Images d'Étals
+-- ---------------------------------------------------------------------
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'stalls_images', 
+  'stalls_images', 
+  true, 
+  5242880, -- Limite de 5 Mo par image
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/jfif']
+)
+ON CONFLICT (id) DO UPDATE SET 
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/jfif'];
+
+-- Policies RLS pour les objets du bucket stalls_images
+CREATE POLICY "Lecture publique des photos d'étals"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'stalls_images');
+
+CREATE POLICY "Vendeurs et admins peuvent uploader des photos"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'stalls_images'
+    AND (
+      auth.role() = 'authenticated'
+      OR public.is_admin()
+    )
+  );
+
+CREATE POLICY "Vendeurs gèrent leurs propres photos ou admin"
+  ON storage.objects FOR UPDATE
   USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
+    bucket_id = 'stalls_images'
+    AND (
+      auth.uid()::text = (storage.foldername(name))[1]
+      OR public.is_admin()
+    )
+  );
+
+CREATE POLICY "Suppression autorisée pour propriétaire ou admin"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'stalls_images'
+    AND (
+      auth.uid()::text = (storage.foldername(name))[1]
+      OR public.is_admin()
     )
   );
 
 -- ---------------------------------------------------------------------
--- 8. FONCTION RPC SPATIALE : RECHERCHE DES ÉTALS AUTOUR DU CLIENT
+-- 9. FONCTION RPC SPATIALE : RECHERCHE DES ÉTALS AUTOUR DU CLIENT
 -- Calcule la distance exacte en mètres avec ST_Distance (PostGIS)
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_nearby_stalls(
@@ -236,7 +323,7 @@ AS $$
 $$;
 
 -- ---------------------------------------------------------------------
--- 9. JEU DE DONNÉES INITIAL (SEED DATA ABIDJAN)
+-- 10. JEU DE DONNÉES INITIAL (SEED DATA ABIDJAN)
 -- ---------------------------------------------------------------------
 INSERT INTO public.dishes (id, name, category, family, default_price_range, description, image_url, keywords)
 VALUES 
@@ -246,4 +333,3 @@ VALUES
   ('pain-brochette', 'Le Pain Brochette ("Pain Bro")', 'sale', 'sandwichs', '500 – 1 500 FCFA', 'Baguette garnie de brochettes de bœuf grillées, crudités et mayonnaise kankankan.', 'https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=800&q=80', ARRAY['pain', 'brochette', 'pain bro', 'baguette']),
   ('claclo', 'Le Claclo (Klaklo)', 'sucre', 'douceurs', '200 – 500 FCFA', 'Beignets ronds et dorés préparés à partir de bananes plantains très mûres.', 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=800&q=80', ARRAY['claclo', 'klaklo', 'beignet', 'banane', 'gouter'])
 ON CONFLICT (id) DO NOTHING;
-

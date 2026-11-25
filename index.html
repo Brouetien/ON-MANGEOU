@@ -2742,18 +2742,27 @@
       }
     }
 
+    // Fonction de neutralisation XSS pour les données utilisateur injectées dans le DOM
+    function escapeHTML(str) {
+      if (str === null || str === undefined) return '';
+      const div = document.createElement('div');
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+
     function updateMapActiveFilterBanner(term, commune, count) {
       const banner = document.getElementById('mapFilterActiveNotice');
       const text = document.getElementById('mapFilterNoticeText');
       if (!banner || !text) return;
 
       if (term || commune !== 'all') {
-        const label = term ? `« ${term} »` : commune;
+        const rawLabel = term ? `« ${term} »` : commune;
+        const safeLabel = escapeHTML(rawLabel);
         if (count > 0) {
-          text.innerHTML = `Filtre actif : <strong>${label}</strong> (${count} étal${count > 1 ? 's' : ''} trouvé${count > 1 ? 's' : ''})`;
+          text.innerHTML = `Filtre actif : <strong>${safeLabel}</strong> (${count} étal${count > 1 ? 's' : ''} trouvé${count > 1 ? 's' : ''})`;
           banner.className = "absolute top-4 right-4 z-20 bg-brand-orange text-white px-3.5 py-1.5 rounded-2xl text-xs font-black shadow-2xl flex items-center gap-2 border border-white/20";
         } else {
-          text.innerHTML = `Aucun étal trouvé pour <strong>${label}</strong>`;
+          text.innerHTML = `Aucun étal trouvé pour <strong>${safeLabel}</strong>`;
           banner.className = "absolute top-4 right-4 z-20 bg-stone-800 text-stone-200 px-3.5 py-1.5 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2 border border-stone-600";
         }
         banner.classList.remove('hidden');
@@ -2987,9 +2996,10 @@
         `).join('');
         autocompleteDropdown.classList.remove('hidden');
       } else {
+        const safeVal = escapeHTML(val);
         autocompleteList.innerHTML = `
           <div class="p-4 text-center text-xs text-stone-500">
-            Aucun plat trouvé pour "${val}". Essayez Garba, Alloco, Choukouya, Gnonmi, Pain Chien...
+            Aucun plat trouvé pour "${safeVal}". Essayez Garba, Alloco, Choukouya, Gnonmi, Pain Chien...
           </div>
         `;
         autocompleteDropdown.classList.remove('hidden');
@@ -3493,16 +3503,11 @@
     }
 
     // -------------------------------------------------------------
-    // 9. ROUTE MASQUÉE ADMIN (/backoffice-access-x99)
+    // 9. ROUTE VERS L'ESPACE ADMINISTRATION PRO (/admin.html)
     // -------------------------------------------------------------
     function openSecretAdminPrompt() {
-      const pass = prompt("Accès Backoffice Sécurisé — Entrez la clé admin (ou tapez 'admin') :");
-      if (pass && pass.toLowerCase() === 'admin') {
-        // Rediriger vers la nouvelle page admin dédiée
-        window.location.href = 'admin.html';
-      } else if (pass !== null) {
-        alert("Accès refusé. Row Level Security bloqué.");
-      }
+      // Redirection directe vers le portail d'administration sécurisé
+      window.location.href = 'admin.html';
     }
 
     function closeAdminModal() {
