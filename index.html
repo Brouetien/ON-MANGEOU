@@ -1,0 +1,3663 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Yassoi On Mange Où ? — La Street-Food d'Abidjan en Direct & Sans Intermédiaire</title>
+  <meta name="description"
+    content="Yassoi On Mange Où ? — Découvrez où manger le meilleur Garba, Alloco, Choukouya, beignets, pains condiments et fruits frais à Abidjan. Vérifiez les étals en service en direct et lancez l'itinéraire GPS Google Maps. Zéro livraison, zéro commission.">
+
+  <!-- Manifest PWA & Favicon Officiel Yassoi -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#E8590C">
+  <link rel="icon" type="image/svg+xml" href="assets/images/logo-yassoi.svg">
+
+  <!-- Google Fonts: Editorial Serif (Fraunces / Recoleta feel) + Clean Modern Sans (Plus Jakarta Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400;1,9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Leaflet CSS & JS for Dark Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Custom Tailwind Config matching the Reference Image Palette -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              peach: '#FEEFE7',       // Hero pastel background from screenshot
+              peachLight: '#FFF7F2',
+              peachDark: '#FCD7C4',
+              orange: '#E8590C',      // Primary warm orange CTA
+              orangeHover: '#CF4B05',
+              dark: '#1C1917',        // Rich deep charcoal
+              muted: '#78716C',
+              pastelPink: '#FCE7ED',
+              pastelGreen: '#E2F7E5',
+              pastelYellow: '#FEF3C7',
+              pastelPeach: '#FFE8D6',
+              statusGreen: '#16A34A',
+              statusRed: '#DC2626',
+            }
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          borderRadius: {
+            '2xl': '1.25rem',
+            '3xl': '1.85rem',
+            '4xl': '2.5rem',
+          },
+          boxShadow: {
+            'soft': '0 12px 35px -8px rgba(232, 89, 12, 0.08)',
+            'card': '0 20px 40px -15px rgba(28, 25, 23, 0.07)',
+            'pop': '0 25px 50px -12px rgba(232, 89, 12, 0.25)',
+            'glow': '0 0 30px rgba(232, 89, 12, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #FEEFE7;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #FCD7C4;
+      border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #E8590C;
+    }
+
+    /* Pulse animation for Live Badges */
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.35);
+        opacity: 0.6;
+      }
+    }
+
+    .animate-pulse-dot {
+      animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Radar sweep animation for the interactive map */
+    @keyframes radar-sweep {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .radar-beam {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 600px;
+      height: 600px;
+      margin-top: -300px;
+      margin-left: -300px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(232, 89, 12, 0.35) 0deg, rgba(232, 89, 12, 0.08) 45deg, transparent 90deg, transparent 360deg);
+      animation: radar-sweep 10s linear infinite;
+      pointer-events: none;
+      z-index: 15;
+      mix-blend-mode: screen;
+    }
+
+    /* Sonar ripple rings */
+    @keyframes sonar-ripple {
+      0% {
+        transform: scale(0.6);
+        opacity: 0.9;
+      }
+
+      100% {
+        transform: scale(2.8);
+        opacity: 0;
+      }
+    }
+
+    .sonar-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(232, 89, 12, 0.7);
+      animation: sonar-ripple 3s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+      pointer-events: none;
+    }
+
+    /* Floating glowing embers */
+    @keyframes ember-rise {
+      0% {
+        transform: translateY(0) scale(0.8);
+        opacity: 0;
+      }
+
+      30% {
+        opacity: 0.8;
+      }
+
+      100% {
+        transform: translateY(-70px) scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    .ember {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #F97316;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #EA580C;
+      animation: ember-rise 4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    /* Leaflet Dark Theme Overrides */
+    .leaflet-tile {
+      filter: brightness(0.68) invert(1) contrast(3.2) hue-rotate(200deg) saturate(0.35);
+    }
+
+    .leaflet-container {
+      background-color: #12100e !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: #1c1917 !important;
+      color: #fff !important;
+      border-radius: 1.25rem !important;
+      box-shadow: 0 20px 35px rgba(0, 0, 0, 0.6) !important;
+      border: 1px solid rgba(232, 89, 12, 0.3) !important;
+    }
+
+    .leaflet-popup-tip {
+      background: #1c1917 !important;
+    }
+
+    /* Glass navigation */
+    .glass-nav {
+      background: rgba(254, 239, 231, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    /* Safe scroll margin for mobile keyboard */
+    .search-scroll-target {
+      scroll-margin-top: 85px;
+    }
+
+    /* Smooth card search result update */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card-appear {
+      animation: fadeInUp 0.22s ease-out both;
+    }
+
+    /* Yassoi wheel winner entrance */
+    @keyframes winnerSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    #yassoiWinnerCard:not(.hidden) {
+      animation: winnerSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    /* Mobile viewport resize: keep search area visible when virtual keyboard appears */
+    @supports (height: 100dvh) {
+      .search-scroll-target {
+        scroll-margin-bottom: 40px;
+      }
+    }
+
+    /* Style de puce pour les tags populaires en focus */
+    .popular-tag:focus-visible {
+      outline: 2px solid #E8590C;
+      outline-offset: 2px;
+    }
+
+    /* ======================================================== */
+    /* ANIMATIONS AVANCÉES DU MENU MOBILE & DU CURVED DOCK     */
+    /* ======================================================== */
+
+    /* Animation du backdrop flouté */
+    @keyframes backdropFadeIn {
+      from { opacity: 0; backdrop-filter: blur(0px); }
+      to { opacity: 1; backdrop-filter: blur(8px); }
+    }
+    .backdrop-enter {
+      animation: backdropFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Animation d'ouverture du tiroir menu mobile avec rebond subtil */
+    @keyframes mobileSheetEnter {
+      0% {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.96);
+        filter: blur(6px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    /* Animation de fermeture du tiroir menu mobile */
+    @keyframes mobileSheetExit {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.97);
+        filter: blur(4px);
+      }
+    }
+
+    /* Cascade d'apparition fluide des éléments du menu */
+    @keyframes menuItemEntrance {
+      0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .mobile-menu-item {
+      animation: menuItemEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Pulsation braise / flamme pour le bouton central flottant du Chef Yassoi */
+    @keyframes fabPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(232, 89, 12, 0.65), 0 10px 25px -4px rgba(0, 0, 0, 0.7);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 10px rgba(232, 89, 12, 0), 0 14px 30px -4px rgba(232, 89, 12, 0.5);
+        transform: scale(1.05);
+      }
+    }
+    .fab-glow-pulse {
+      animation: fabPulse 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Rotation lente et fluide de la roue 🎡 */
+    @keyframes slowSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-slow {
+      animation: slowSpin 14s linear infinite;
+    }
+
+    /* Micro-animation au toucher pour les onglets du dock */
+    .dock-tab {
+      transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+    .dock-tab:active {
+      transform: scale(0.88);
+    }
+    .dock-tab.active-tab {
+      color: #E8590C;
+    }
+    .dock-tab.active-tab svg {
+      color: #E8590C !important;
+      transform: translateY(-2px);
+    }
+    .dock-tab.active-tab span.tab-title {
+      color: #FFFFFF !important;
+      font-weight: 800;
+    }
+    .dock-tab.active-tab .dock-indicator {
+      width: 14px;
+      opacity: 1;
+    }
+    .dock-indicator {
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 2.5px;
+      background: #E8590C;
+      border-radius: 9999px;
+      transition: all 0.25s ease;
+      opacity: 0;
+    }
+
+    /* ===== MENU MOBILE SHEET — styles complémentaires ===== */
+    /* Le menu est un sheet fixe positionné, pas inline dans le header */
+    #mobileMenu {
+      transition: none;
+    }
+    .mobile-sheet-open {
+      animation: mobileSheetEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .mobile-sheet-closing {
+      animation: mobileSheetExit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+    }
+    #mobileMenuBackdrop {
+      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Stagger délay auto sur chaque item du menu */
+    #mobileMenu .mobile-menu-item:nth-child(1) { animation-delay: 60ms; }
+    #mobileMenu .mobile-menu-item:nth-child(2) { animation-delay: 95ms; }
+    #mobileMenu .mobile-menu-item:nth-child(3) { animation-delay: 130ms; }
+    #mobileMenu nav .mobile-menu-item:nth-child(1) { animation-delay: 160ms; }
+    #mobileMenu nav .mobile-menu-item:nth-child(2) { animation-delay: 200ms; }
+    #mobileMenu nav .mobile-menu-item:nth-child(3) { animation-delay: 240ms; }
+    #mobileMenu nav .mobile-menu-item:nth-child(4) { animation-delay: 280ms; }
+    #mobileMenu nav .mobile-menu-item:nth-child(5) { animation-delay: 320ms; }
+    #mobileMenu nav .mobile-menu-item:nth-child(6) { animation-delay: 360ms; }
+    #mobileMenu .mobile-menu-item:last-child { animation-delay: 400ms; }
+
+    /* Fermeture du menu au clic sur un lien : smooth scroll */
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+
+<body class="bg-white text-brand-dark font-sans antialiased selection:bg-brand-orange selection:text-white">
+
+  <!-- Backdrop flouté pour le menu mobile (positionné ici pour couvrir tout le body) -->
+  <div id="mobileMenuBackdrop" onclick="toggleMobileMenu(true)"
+    class="fixed inset-0 z-40 bg-black/40 hidden lg:hidden" aria-hidden="true">
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TOP BANNER: LIVE PULSE D'ABIDJAN -->
+  <!-- ========================================================================= -->
+  <aside aria-label="Informations en direct"
+    class="bg-brand-dark text-white text-xs py-2 px-3 sm:px-4 border-b border-stone-800">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 truncate">
+        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse-dot shrink-0"></span>
+        <span class="font-bold text-stone-100 shrink-0">Abidjan en Direct :</span>
+        <span class="text-stone-300 hidden sm:inline truncate">158 étals ouverts (Garba, Alloco, Beignets, Pains condiments & Fruits frais).</span>
+        <span class="text-stone-300 sm:hidden text-[11px] truncate">158 étals en service</span>
+      </div>
+      <div class="flex items-center gap-2.5 text-stone-300 shrink-0">
+        <a href="#partenariats"
+          class="text-[11px] font-bold text-brand-orange hover:text-amber-400 transition-colors flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Pubs & Partenariats</span>
+          <span class="sm:hidden">Pubs</span>
+        </a>
+        <button onclick="toggleVendorDrawer()"
+          class="hover:text-brand-orange transition-colors flex items-center gap-1 text-[11px] font-semibold bg-stone-800 px-2.5 py-0.5 rounded-full border border-stone-700">
+          <span>Accès Vendeur</span>
+          <i data-lucide="arrow-right" class="w-3 h-3"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- NAVIGATION DESKTOP & MOBILE (Inspirée du layout épuré LeadPilot : Aérée & sans retour à la ligne) -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-40 glass-nav border-b border-brand-peachDark/40 transition-all">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-2 sm:gap-4">
+
+      <!-- 1. Logo Officiel Yassoi On Mange Où ? (Format optimisé responsive) -->
+      <a href="#" class="flex items-center shrink-0 group py-1" aria-label="Accueil Yassoi On Mange Où ?">
+        <img src="assets/images/logo-yassoi-horizontal.svg" alt="Yassoi On Mange Où ? - Street-Food Abidjan" class="h-9 sm:h-11 md:h-12 w-auto max-w-[130px] sm:max-w-none group-hover:scale-105 transition-transform" />
+      </a>
+
+      <!-- 2. Liens Centraux Épurés (Desktop - Sur 1 seule ligne strictly nowrap) -->
+      <nav class="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-semibold text-stone-700">
+        <a href="#carte" class="hover:text-brand-orange transition-colors flex items-center gap-1.5 whitespace-nowrap">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot"></span>
+          <span>Carte Live</span>
+        </a>
+        <a href="#catalogue" class="hover:text-brand-orange transition-colors whitespace-nowrap">
+          Catalogue
+        </a>
+        <a href="#chef-yassoi" class="hover:text-brand-orange transition-colors flex items-center gap-1.5 text-brand-orange font-bold whitespace-nowrap">
+          <span>🎡</span>
+          <span>Chef Yassoi</span>
+        </a>
+        <a href="#vendeuses" class="hover:text-brand-orange transition-colors whitespace-nowrap">
+          Vendeuses
+        </a>
+        <a href="#comment-ca-marche" class="hover:text-brand-orange transition-colors whitespace-nowrap">
+          Concept
+        </a>
+        <a href="#avis" class="hover:text-brand-orange transition-colors whitespace-nowrap">
+          Avis
+        </a>
+      </nav>
+
+      <!-- 3. Actions Droite (Responsive : Espace Vendeur + Bouton Trouver compact + Burger Garanti 100% Visible) -->
+      <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+        <!-- Lien Sobre Espace Vendeur (Desktop & Tablette large) -->
+        <button onclick="toggleVendorDrawer()"
+          class="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold text-stone-700 hover:text-brand-orange transition-colors whitespace-nowrap py-2 px-1">
+          <i data-lucide="store" class="w-4 h-4 text-brand-orange"></i>
+          <span>Espace Vendeur</span>
+        </button>
+
+        <!-- CTA Principal Pilule (Texte complet sur tablette/desktop, compact sur mobile) -->
+        <button onclick="scrollToSearchAndFocus()"
+          class="px-3 py-2 sm:px-5 sm:py-2.5 rounded-full bg-brand-orange hover:bg-brand-orangeHover text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-brand-orange/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap shrink-0">
+          <i data-lucide="navigation" class="w-3.5 h-3.5 shrink-0"></i>
+          <span class="hidden sm:inline">Trouver mon plat</span>
+          <span class="sm:hidden text-xs">Trouver</span>
+        </button>
+
+        <!-- Bouton Burger Mobile Toujours 100% Visible & Net -->
+        <button onclick="toggleMobileMenu()"
+          class="lg:hidden w-10 h-10 rounded-2xl bg-white/95 border border-brand-peachDark hover:border-brand-orange text-stone-800 hover:text-brand-orange shadow-sm flex items-center justify-center shrink-0 transition-all active:scale-90"
+          aria-label="Ouvrir le menu">
+          <i id="burgerIcon" data-lucide="menu" class="w-5 h-5 text-stone-900"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- MENU MOBILE SHEET FLOTTANT AVEC ANIMATION LUXE (hors header)  -->
+  <!-- ============================================================ -->
+  <div id="mobileMenu"
+      class="fixed top-20 inset-x-3 sm:inset-x-6 max-w-lg mx-auto z-50 bg-white border border-stone-200 rounded-3xl p-4 sm:p-5 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.25),0_0_0_1px_rgba(232,89,12,0.08)] hidden lg:hidden max-h-[82vh] overflow-y-auto overscroll-contain">
+      
+      <!-- En-tête du tiroir mobile avec identité de marque & fermeture fluide -->
+      <div class="flex items-center justify-between pb-3.5 mb-3 border-b border-stone-100">
+        <div class="flex items-center gap-2">
+          <img src="assets/images/logo-yassoi-horizontal.svg" alt="Yassoi On Mange Où ?" class="h-8 w-auto" />
+          <span class="text-[10px] font-black uppercase tracking-wider bg-brand-peach px-2 py-0.5 rounded-full text-brand-orange border border-brand-peachDark/50">
+            Abidjan Direct
+          </span>
+        </div>
+        <button onclick="toggleMobileMenu(true)" 
+          class="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 active:scale-90 text-stone-600 flex items-center justify-center transition-all"
+          aria-label="Fermer le menu">
+          <i data-lucide="x" class="w-4 h-4 text-stone-700"></i>
+        </button>
+      </div>
+
+      <!-- Item 0 : CARTE INTERACTIVE CHEF YASSOI (Oracle Budget) -->
+      <div class="mobile-menu-item mb-3">
+        <a href="#chef-yassoi" onclick="toggleMobileMenu(true)"
+          class="block p-3.5 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-brand-peach border border-brand-orange/30 hover:border-brand-orange transition-all group relative overflow-hidden">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-orange to-amber-400 flex items-center justify-center shadow-md shadow-brand-orange/30 shrink-0 text-xl spin-slow">
+                🎡
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black text-brand-dark">Chef Yassoi</span>
+                  <span class="px-1.5 py-0.5 text-[9px] font-black uppercase bg-brand-orange text-white rounded-md tracking-wider">Oracle</span>
+                </div>
+                <p class="text-[11px] text-stone-600 font-medium line-clamp-1">Tu hésites ? Fais tourner la roue selon ton budget !</p>
+              </div>
+            </div>
+            <div class="w-7 h-7 rounded-full bg-white shadow-sm flex items-center justify-center text-brand-orange group-hover:translate-x-1 transition-transform shrink-0">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- LISTE DES LIENS DE NAVIGATION TACTILES AVEC EFFET STAGGER -->
+      <nav class="space-y-1.5" aria-label="Liens du menu mobile">
+        
+        <!-- Item 1 : Carte Live -->
+        <a href="#carte" onclick="toggleMobileMenu(true)"
+          class="mobile-menu-item flex items-center justify-between p-2.5 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-105 transition-transform">
+              <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-stone-900 group-hover:text-brand-orange transition-colors">Carte Live Interactive</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot"></span>
+              </div>
+              <p class="text-[10px] text-stone-500">158 étals réels géolocalisés en direct</p>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 rounded-full">Live</span>
+        </a>
+
+        <!-- Item 2 : Catalogue Local -->
+        <a href="#catalogue" onclick="toggleMobileMenu(true)"
+          class="mobile-menu-item flex items-center justify-between p-2.5 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-orange-50 text-brand-orange flex items-center justify-center shrink-0 border border-orange-100 group-hover:scale-105 transition-transform text-base">
+              🍲
+            </div>
+            <div>
+              <span class="text-xs font-bold text-stone-900 group-hover:text-brand-orange transition-colors">Catalogue Street-Food Local</span>
+              <p class="text-[10px] text-stone-500">Garba, Alloco, Choukouya, Placali, Foutou...</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300 group-hover:text-stone-500 transition-colors"></i>
+        </a>
+
+        <!-- Item 3 : Vendeuses de Rue -->
+        <a href="#vendeuses" onclick="toggleMobileMenu(true)"
+          class="mobile-menu-item flex items-center justify-between p-2.5 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 group-hover:scale-105 transition-transform text-base">
+              🍩
+            </div>
+            <div>
+              <span class="text-xs font-bold text-stone-900 group-hover:text-brand-orange transition-colors">Beignets, Pains & Fruits</span>
+              <p class="text-[10px] text-stone-500">Gnonmi, Pain Chien, Papaye, Ananas découpés</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300 group-hover:text-stone-500 transition-colors"></i>
+        </a>
+
+        <!-- Item 4 : Comment ça marche (Concept) -->
+        <a href="#comment-ca-marche" onclick="toggleMobileMenu(true)"
+          class="mobile-menu-item flex items-center justify-between p-2.5 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center shrink-0 border border-stone-200 group-hover:scale-105 transition-transform">
+              <i data-lucide="compass" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="text-xs font-bold text-stone-900 group-hover:text-brand-orange transition-colors">Le Concept Zéro Livraison</span>
+              <p class="text-[10px] text-stone-500">Pas d'intermédiaire, direct au vrai goût</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300 group-hover:text-stone-500 transition-colors"></i>
+        </a>
+
+        <!-- Item 5 : À Propos, Pubs & Partenariats -->
+        <a href="#partenariats" onclick="toggleMobileMenu(true)"
+          class="mobile-menu-item flex items-center justify-between p-2.5 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 group-hover:scale-105 transition-transform">
+              <i data-lucide="sparkles" class="w-4 h-4 text-rose-500"></i>
+            </div>
+            <div>
+              <span class="text-xs font-bold text-stone-900 group-hover:text-brand-orange transition-colors">À Propos & Partenariats</span>
+              <p class="text-[10px] text-stone-500">Régie pubs, marques & sponsors locaux</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300 group-hover:text-stone-500 transition-colors"></i>
+        </a>
+
+        <!-- Item 6 : Avis Vérifiés -->
+        <a href="#avis" onclick="toggleMobileMenu(true)"
+          class="mobile-menu-item flex items-center justify-between p-2.5 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-all group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center shrink-0 border border-amber-100 group-hover:scale-105 transition-transform">
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+            </div>
+            <div>
+              <span class="text-xs font-bold text-stone-900 group-hover:text-brand-orange transition-colors">Avis des Gourmets d'Abidjan</span>
+              <p class="text-[10px] text-stone-500">Note moyenne 4.9/5 sur 2 400+ avis</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-stone-300 group-hover:text-stone-500 transition-colors"></i>
+        </a>
+
+      </nav>
+
+      <!-- Boutons d'Action Inférieurs dans le menu -->
+      <div class="mobile-menu-item pt-3 mt-2 border-t border-stone-100 flex flex-col gap-2">
+        <button onclick="toggleMobileMenu(true); toggleVendorDrawer();"
+          class="w-full py-3 px-4 rounded-2xl bg-brand-dark hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-black/10 transition-transform active:scale-95">
+          <i data-lucide="store" class="w-4 h-4 text-brand-orange"></i>
+          <span>Accéder à mon Espace Vendeur</span>
+        </button>
+      </div>
+
+    </div>
+  <!-- /END Menu Mobile Sheet -->
+
+  <!-- ========================================================================= -->
+  <!-- 1. HERO SECTION AVEC PHOTOS LOCALES & BARRE DE RECHERCHE ULTRA-RESPONSIVE -->
+  <!-- ========================================================================= -->
+  <section class="relative bg-brand-peach pt-8 pb-32 sm:pb-40 md:pt-14 md:pb-48">
+    <!-- Cercles subtils décoratifs en arrière-plan contenus de manière sécurisée -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-brand-peachDark/35 blur-3xl"></div>
+      <div class="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-brand-pastelGreen/35 blur-3xl"></div>
+    </div>
+
+    <!-- Dégradé doux de transition vers la section blanche suivante -->
+    <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-white pointer-events-none">
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+      <!-- Top Title Pill / Badge -->
+      <div class="text-center mb-5">
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 border border-brand-peachDark shadow-sm text-xs font-bold text-brand-dark mb-3">
+          <span class="w-2 h-2 rounded-full bg-brand-orange"></span>
+          <span>Street-Food 100% Ivoirienne &bull; Zéro Livraison &bull; Coordonnées GPS Direct</span>
+        </div>
+
+        <h1
+          class="font-serif font-black text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-brand-dark max-w-4xl mx-auto leading-[1.08]">
+          Le Vrai Goût d'Abidjan.<br />
+          <span class="italic font-normal text-brand-orange">En direct.</span> Sans détour.
+        </h1>
+        <p class="mt-3 text-sm sm:text-base md:text-lg text-stone-600 max-w-2xl mx-auto font-medium">
+          Garba croustillant, Alloco pimenté, Choukouya, Gnonmi et Pain Chien chaud. Repérez les étals <strong
+            class="text-stone-900 font-extrabold">ouverts maintenant</strong> et activez l'itinéraire GPS.
+        </p>
+      </div>
+
+      <!-- HERO VISUAL AVEC LA VRAIE PHOTO DU GARBA FOURNIE (assets/images/GARBA.jfif) -->
+      <div class="relative max-w-4xl mx-auto my-7 md:my-10">
+
+        <div
+          class="relative rounded-3xl md:rounded-4xl overflow-hidden shadow-2xl shadow-brand-orange/20 border-4 border-white aspect-[16/10] sm:aspect-[16/9] md:aspect-[21/9] bg-stone-900">
+          <img src="assets/images/GARBA.jfif" alt="Le Vrai Garba National d'Abidjan au thon croustillant"
+            class="w-full h-full object-cover object-center" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+
+          <div
+            class="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 md:bottom-8 md:left-8 flex flex-col md:flex-row md:items-end justify-between gap-3">
+            <div class="text-white">
+              <span
+                class="inline-block px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold bg-brand-orange text-white mb-1.5 shadow-sm">
+                Spécialité Nationale N°1
+              </span>
+              <h2 class="font-serif text-xl sm:text-2xl md:text-3xl font-black">Le Garba National au Thon Frit
+                Croustillant</h2>
+              <p class="text-xs sm:text-sm text-stone-200 line-clamp-1 sm:line-clamp-none">Attiéké moelleux, piment
+                rouge frais pilé, oignons et dés de tomate.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="filterCatalog('Garba')"
+                class="px-4 py-2.5 rounded-full bg-white text-brand-dark hover:bg-brand-peach text-xs font-black flex items-center gap-1.5 shadow-lg transition-all active:scale-95">
+                <span>Voir les 24 garbadromes</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-brand-orange"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Badge Gauche (Photo VRAIE ALLOCO.jfif) -->
+        <div
+          class="hidden sm:flex absolute -left-6 top-1/4 bg-white/95 backdrop-blur-md p-3.5 rounded-3xl shadow-xl border border-brand-peachDark/80 max-w-[210px] items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl overflow-hidden shrink-0 border border-stone-200">
+            <img src="assets/images/ALLOCO.jfif" alt="Alloco doré" class="w-full h-full object-cover">
+          </div>
+          <div>
+            <div class="flex items-center gap-1 text-amber-500 text-xs font-bold">
+              <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+              <span>5.0 / 5</span>
+            </div>
+            <p class="text-xs font-extrabold text-stone-900 leading-tight mt-0.5">Alloco d'Or & Piment</p>
+            <span
+              class="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full inline-block mt-1">À
+              180m de toi</span>
+          </div>
+        </div>
+
+        <!-- Floating Badge Droite (Photo VRAIE choukouya.jfif) -->
+        <div
+          class="hidden sm:flex absolute -right-6 top-1/3 bg-brand-pastelGreen/95 backdrop-blur-md p-3.5 rounded-3xl shadow-xl border border-emerald-200/90 max-w-[220px] items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl overflow-hidden shrink-0 border border-emerald-300">
+            <img src="assets/images/choukouya.jfif" alt="Choukouya braisé" class="w-full h-full object-cover">
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot"></span>
+              <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800">En Service Direct</span>
+            </div>
+            <p class="text-xs font-black text-stone-900 leading-tight mt-1">Choukouya Braisé</p>
+            <span class="text-[11px] font-bold text-stone-600">Kankankan ardent</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BARRE DE RECHERCHE & AUTOCOMPLÉTION DYNAMIQUE (ESPACEMENT SOIGNÉ & SANS CHEVAUCHEMENT) -->
+      <!-- ========================================================================= -->
+      <div id="searchSection" class="max-w-3xl mx-auto relative mt-6 sm:mt-8 z-30 search-scroll-target">
+
+        <!-- Boîtier de Recherche Principal avec Dropdown ancré directement sous lui -->
+        <div class="relative z-40">
+          <div
+            class="bg-white p-2 sm:p-3 rounded-2xl sm:rounded-full shadow-2xl shadow-brand-orange/20 border-2 border-brand-peachDark flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
+
+            <div class="flex items-center flex-1 px-2 py-1 sm:py-0">
+              <i data-lucide="search" class="w-5 h-5 text-brand-orange shrink-0 mr-2.5"></i>
+              <input type="text" id="searchInput" placeholder="Que mange-t-on ? (Garba, Alloco, Choukouya, Gnonmi...)"
+                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search"
+                enterkeyhint="search" onfocus="handleSearchFocus()"
+                class="w-full text-sm sm:text-base font-semibold text-brand-dark placeholder-stone-400 focus:outline-none bg-transparent" />
+              <button id="clearSearchBtn" onclick="clearSearchInput()"
+                class="hidden p-1 text-stone-400 hover:text-stone-600 transition-colors">
+                <i data-lucide="x-circle" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Selecteur de Commune -->
+            <div
+              class="flex items-center justify-between sm:justify-start border-t sm:border-t-0 sm:border-l border-stone-200 pt-2 sm:pt-0 pl-2 sm:pl-3 pr-2">
+              <div class="flex items-center text-stone-500 text-xs font-bold">
+                <i data-lucide="map-pin" class="w-4 h-4 text-brand-orange mr-1.5 shrink-0"></i>
+                <span class="sm:hidden text-stone-400 mr-2">Commune :</span>
+              </div>
+              <select id="communeSelect" onchange="triggerSearch()"
+                class="text-xs font-bold text-stone-800 bg-transparent focus:outline-none cursor-pointer py-1">
+                <option value="all">Tout Abidjan (10 Communes)</option>
+                <option value="Yopougon">Yopougon (Siporex, Selmer)</option>
+                <option value="Cocody">Cocody (Angré, Blockhauss)</option>
+                <option value="Marcory">Marcory (GFCI, Zone 4)</option>
+                <option value="Treichville">Treichville (Avenue 8)</option>
+                <option value="Plateau">Plateau (Centre-Ville)</option>
+                <option value="Koumassi">Koumassi (Remblais)</option>
+              </select>
+            </div>
+
+            <!-- Bouton d'action Trouver -->
+            <button id="searchBtn" onclick="triggerSearch()"
+              class="w-full sm:w-auto shrink-0 px-6 py-3 rounded-xl sm:rounded-full bg-brand-orange text-white hover:bg-brand-orangeHover font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-orange/30 transition-all hover:scale-105 active:scale-95">
+              <span>Trouver l'étal</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- DROPDOWN AUTOCOMPLÉTION DYNAMIQUE -->
+          <div id="autocompleteDropdown"
+            class="hidden absolute top-[calc(100%+10px)] left-0 right-0 bg-white rounded-3xl shadow-2xl border border-stone-200/90 overflow-hidden z-50 transition-all">
+            <div
+              class="px-4 py-3 bg-stone-50/95 border-b border-stone-100 flex items-center justify-between text-xs font-bold text-stone-600">
+              <span class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-orange animate-pulse-dot"></span>
+                <span>CATALOGUE D'ABIDJAN — CORRESPONDANCES EN SERVICE</span>
+              </span>
+              <button onclick="closeAutocomplete()"
+                class="text-[11px] font-bold text-stone-400 hover:text-brand-orange transition-colors">Fermer
+                &times;</button>
+            </div>
+            <div id="autocompleteList"
+              class="max-h-56 sm:max-h-64 overflow-y-auto divide-y divide-stone-100 overscroll-contain">
+              <!-- Dynamically populated by JS avec les VRAIES PHOTOS fournies -->
+            </div>
+            <div
+              class="px-4 py-2.5 bg-stone-50/70 border-t border-stone-100 text-[11px] text-stone-400 flex items-center justify-between">
+              <span>💡 Cliquez sur un plat pour afficher les coordonnées GPS de l'étal</span>
+              <span class="text-brand-orange font-bold">100% Street-food Abidjan</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tags rapides cliquables sous la recherche avec marge aérée -->
+        <div id="searchQuickTags"
+          class="mt-5 pb-2 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 text-xs relative z-10">
+          <span class="font-bold text-stone-500 text-[11px] sm:text-xs">Populaires :</span>
+          <button onclick="setSearchValue('Garba')"
+            class="popular-tag px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-brand-orange hover:text-white border border-stone-200 text-stone-700 font-semibold shadow-sm transition-all hover:scale-105">🐟
+            Garba</button>
+          <button onclick="setSearchValue('Alloco')"
+            class="popular-tag px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-brand-orange hover:text-white border border-stone-200 text-stone-700 font-semibold shadow-sm transition-all hover:scale-105">🍌
+            Alloco</button>
+          <button onclick="setSearchValue('Choukouya')"
+            class="popular-tag px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-brand-orange hover:text-white border border-stone-200 text-stone-700 font-semibold shadow-sm transition-all hover:scale-105">🔥
+            Choukouya</button>
+          <button onclick="setSearchValue('Pain Chien')"
+            class="popular-tag px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-brand-orange hover:text-white border border-stone-200 text-stone-700 font-semibold shadow-sm transition-all hover:scale-105">🥖
+            Pain Chien</button>
+          <button onclick="setSearchValue('Gnonmi')"
+            class="popular-tag px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-brand-orange hover:text-white border border-stone-200 text-stone-700 font-semibold shadow-sm transition-all hover:scale-105">🍩
+            Gnonmi & Beignets</button>
+          <button onclick="setSearchValue('Fruits Frais')"
+            class="popular-tag px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-brand-orange hover:text-white border border-stone-200 text-stone-700 font-semibold shadow-sm transition-all hover:scale-105">🍍
+            Fruits Frais</button>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 2. CRAVE-WORTHY DISHES YOU'LL LOVE (Photos FOURNIES : GARBA, ALLOCO, CHOUKOUYA) -->
+  <!-- ========================================================================= -->
+  <section id="catalogue" class="py-16 md:py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+        <div>
+          <span class="text-xs uppercase font-extrabold tracking-widest text-brand-orange">Pépites Culinaires
+            Authentiques</span>
+          <h2 class="font-serif font-black text-2xl sm:text-4xl text-brand-dark mt-1">
+            Les Plats Qui Font Vibrer Abidjan
+          </h2>
+          <p class="text-stone-500 text-xs sm:text-sm mt-1.5 max-w-xl">
+            Préparés à la commande au bord du goudron. Photos réelles certifiées de nos étals partenaires.
+          </p>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="filterType('sale')"
+            class="category-pill active px-4 py-2 rounded-full text-xs font-bold border border-brand-orange bg-brand-orange text-white transition-all">
+            Plats Salés
+          </button>
+          <button onclick="filterType('vendeuses')"
+            class="category-pill px-4 py-2 rounded-full text-xs font-bold border border-stone-200 bg-stone-50 text-stone-700 hover:border-brand-orange transition-all">
+            Pains, Beignets & Fruits
+          </button>
+          <button onclick="filterType('traditionnels')"
+            class="category-pill px-4 py-2 rounded-full text-xs font-bold border border-stone-200 bg-stone-50 text-stone-700 hover:border-brand-orange transition-all">
+            Plats en Sauce (Foutou/Placali)
+          </button>
+          <button onclick="filterType('tous')"
+            class="category-pill px-4 py-2 rounded-full text-xs font-bold border border-stone-200 bg-stone-50 text-stone-700 hover:border-brand-orange transition-all">
+            Tout Voir (17 Plats)
+          </button>
+        </div>
+      </div>
+
+      <!-- 3 Featured Cards (Cartes sombres 3xl avec bouton rond orange) -->
+      <div id="craveCardsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+
+        <!-- Card 1: VRAIE PHOTO GARBA.jfif -->
+        <div
+          class="group relative rounded-3xl overflow-hidden shadow-card border border-stone-100 bg-stone-900 aspect-[4/5] flex flex-col justify-end p-6 hover:shadow-pop transition-all duration-300">
+          <img src="assets/images/GARBA.jfif" alt="Le Garba National Thon Frais"
+            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85" />
+          <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
+
+          <div class="relative z-10">
+            <div class="flex items-center gap-2 mb-2">
+              <span
+                class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-pastelGreen text-emerald-900">
+                🟢 38 étals en service
+              </span>
+              <span class="text-xs text-amber-400 font-bold flex items-center gap-0.5">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i> 4.9
+              </span>
+            </div>
+            <h3 class="font-serif text-2xl font-bold text-white leading-tight">Le Garba National</h3>
+            <p class="text-stone-300 text-xs mt-1 line-clamp-2">Attiéké fin, darne de thon frit croustillante, piment
+              rouge frais pilé et dés d'oignon croquants.</p>
+            <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-stone-400">Fourchette</span>
+                <p class="text-sm font-black text-white">500 – 1 500 FCFA</p>
+              </div>
+              <button onclick="openDishModal('garba')" aria-label="Voir la fiche du Garba"
+                class="w-10 h-10 rounded-full bg-brand-orange text-white flex items-center justify-center hover:bg-white hover:text-brand-orange transition-all shadow-lg shadow-brand-orange/40">
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: VRAIE PHOTO ALLOCO.jfif -->
+        <div
+          class="group relative rounded-3xl overflow-hidden shadow-card border border-stone-100 bg-stone-900 aspect-[4/5] flex flex-col justify-end p-6 hover:shadow-pop transition-all duration-300">
+          <img src="assets/images/ALLOCO.jfif" alt="Alloco Banane plantain frite"
+            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85" />
+          <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
+
+          <div class="relative z-10">
+            <div class="flex items-center gap-2 mb-2">
+              <span
+                class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-pastelPeach text-amber-950">
+                🟢 45 étals en service
+              </span>
+              <span class="text-xs text-amber-400 font-bold flex items-center gap-0.5">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i> 5.0
+              </span>
+            </div>
+            <h3 class="font-serif text-2xl font-bold text-white leading-tight">L'Alloco & Sauce Piment</h3>
+            <p class="text-stone-300 text-xs mt-1 line-clamp-2">Bananes plantains mûres frites en dés dorés, servies
+              avec sauce pimentée oignons-tomates et œuf dur.</p>
+            <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-stone-400">Fourchette</span>
+                <p class="text-sm font-black text-white">300 – 1 000 FCFA</p>
+              </div>
+              <button onclick="openDishModal('alloco')" aria-label="Voir la fiche de l'Alloco"
+                class="w-10 h-10 rounded-full bg-brand-orange text-white flex items-center justify-center hover:bg-white hover:text-brand-orange transition-all shadow-lg shadow-brand-orange/40">
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: VRAIE PHOTO choukouya.jfif -->
+        <div
+          class="group relative rounded-3xl overflow-hidden shadow-card border border-stone-100 bg-stone-900 aspect-[4/5] flex flex-col justify-end p-6 hover:shadow-pop transition-all duration-300">
+          <img src="assets/images/choukouya.jfif" alt="Choukouya Viande braisée"
+            class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85" />
+          <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
+
+          <div class="relative z-10">
+            <div class="flex items-center gap-2 mb-2">
+              <span
+                class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-pastelPink text-rose-950">
+                🟢 29 étals en service
+              </span>
+              <span class="text-xs text-amber-400 font-bold flex items-center gap-0.5">
+                <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i> 4.8
+              </span>
+            </div>
+            <h3 class="font-serif text-2xl font-bold text-white leading-tight">Le Choukouya d'Agneau</h3>
+            <p class="text-stone-300 text-xs mt-1 line-clamp-2">Viande marinée cuite à l'étouffée puis grillée au
+              charbon ardent, saupoudrée d'épices Kankankan secrètes.</p>
+            <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-stone-400">Fourchette</span>
+                <p class="text-sm font-black text-white">2 000 – 5 000 FCFA</p>
+              </div>
+              <button onclick="openDishModal('choukouya')" aria-label="Voir la fiche du Choukouya"
+                class="w-10 h-10 rounded-full bg-brand-orange text-white flex items-center justify-center hover:bg-white hover:text-brand-orange transition-all shadow-lg shadow-brand-orange/40">
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 3. NOUVELLE SECTION EXCLUSIVE : LES VENDEUSES DE RUE (BEIGNETS, PAINS, FRUITS) -->
+  <!-- ========================================================================= -->
+  <section id="vendeuses" class="py-16 md:py-20 bg-brand-peachLight border-y border-brand-peachDark/35">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <span class="text-xs uppercase font-extrabold tracking-widest text-brand-orange">Hommage aux Piliers du
+          Pavé</span>
+        <h2 class="font-serif font-black text-3xl sm:text-4xl text-brand-dark mt-1">
+          La Vendeuse de Beignets, de Pains & de Fruits Frais
+        </h2>
+        <p class="text-stone-600 text-xs sm:text-sm mt-2">
+          Le matin à l'aube pour le café, à 16h pour le goûter ou tard le soir : localisez en temps réel les vendeuses
+          indispensables de chaque quartier.
+        </p>
+      </div>
+
+      <!-- 3 Univers de Vendeuses avec photos fournies -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <!-- UNIVERS 1: LA VENDEUSE DE BEIGNETS (Gnonmi, Boule-boule, Galettes rouges) -->
+        <div class="bg-white rounded-3xl p-6 shadow-card border border-stone-200/80 flex flex-col justify-between">
+          <div>
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="aspect-square rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img src="assets/images/Gnonmi.jfif" alt="Gnonmi ivoirien" class="w-full h-full object-cover">
+              </div>
+              <div class="aspect-square rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img src="assets/images/boule boule.jfif" alt="Boule-boule beignets" class="w-full h-full object-cover">
+              </div>
+              <div class="aspect-square rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img src="assets/images/galettes rouges .jfif" alt="Galettes rouges croustillantes"
+                  class="w-full h-full object-cover">
+              </div>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">
+                🍩 Délices de 6h & 16h
+              </span>
+              <span class="text-xs text-emerald-700 font-extrabold">🟢 En service</span>
+            </div>
+            <h3 class="font-serif text-xl font-bold text-brand-dark">La Vendeuse de Beignets & Baka</h3>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              <strong>Gnonmi</strong> de mil/riz moelleux, <strong>Boule-boule</strong> dorés sucrés et <strong>Galettes
+                rouges</strong> croustillantes. Le goûter traditionnel chaud servi avec bouillie de mil parfumée.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-xs font-black text-brand-orange">100 – 500 FCFA</span>
+            <button onclick="setSearchValue('Gnonmi')"
+              class="px-4 py-2 rounded-full bg-brand-peach text-brand-orange hover:bg-brand-orange hover:text-white font-bold text-xs transition-colors flex items-center gap-1">
+              <span>Localiser</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- UNIVERS 2: LA VENDEUSE DE PAINS (Pain chien & Pain condiment) -->
+        <div class="bg-white rounded-3xl p-6 shadow-card border border-stone-200/80 flex flex-col justify-between">
+          <div>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img src="assets/images/pain avec condiment .jfif" alt="Pain avec condiments Penavona"
+                  class="w-full h-full object-cover">
+              </div>
+              <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img src="assets/images/Pain chien_.jfif" alt="Pain Chien chaud" class="w-full h-full object-cover">
+              </div>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-950">
+                🥖 Sandwichs de Rue Culte
+              </span>
+              <span class="text-xs text-emerald-700 font-extrabold">🟢 En service</span>
+            </div>
+            <h3 class="font-serif text-xl font-bold text-brand-dark">La Vendeuse de Pains Condiments</h3>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              Le célèbre <strong>Pain Chien</strong> généreux et le <strong>Pain Condiment</strong> (spaghetti,
+              sardines, œufs durs, mayonnaise épicée). Servi minute dans une demi-baguette croustillante.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-xs font-black text-brand-orange">300 – 1 200 FCFA</span>
+            <button onclick="setSearchValue('Pain Chien')"
+              class="px-4 py-2 rounded-full bg-brand-peach text-brand-orange hover:bg-brand-orange hover:text-white font-bold text-xs transition-colors flex items-center gap-1">
+              <span>Localiser</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- UNIVERS 3: LA VENDEUSE DE FRUITS FRAIS & DOUCEURS -->
+        <div class="bg-white rounded-3xl p-6 shadow-card border border-stone-200/80 flex flex-col justify-between">
+          <div>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img src="assets/images/Du Coco râpé grillé.jfif" alt="Coco râpé grillé sucré"
+                  class="w-full h-full object-cover">
+              </div>
+              <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img src="assets/images/Crispy Plantain Chips - KikiFoodies.jfif" alt="Chips de plantain"
+                  class="w-full h-full object-cover">
+              </div>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-950">
+                🍍 Fruits Découpés & Fraîcheur
+              </span>
+              <span class="text-xs text-emerald-700 font-extrabold">🟢 En service</span>
+            </div>
+            <h3 class="font-serif text-xl font-bold text-brand-dark">La Vendeuse de Fruits Frais & Coco</h3>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              Tranches d'<strong>Ananas de Bonoua</strong> bien sucrées, <strong>Pastèque glacée</strong>, mangues
+              parfumées, barquettes de <strong>Coco râpé grillé</strong> et chips de plantain artisanales.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-xs font-black text-brand-orange">200 – 1 000 FCFA</span>
+            <button onclick="setSearchValue('Fruits Frais')"
+              class="px-4 py-2 rounded-full bg-brand-peach text-brand-orange hover:bg-brand-orange hover:text-white font-bold text-xs transition-colors flex items-center gap-1">
+              <span>Localiser</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 4. PLATS TRADITIONNELS & SPÉCIALITÉS (APF, FOUTOU, PLACALI, BANANE BRAISÉE) -->
+  <!-- ========================================================================= -->
+  <section class="py-16 md:py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+        <div>
+          <span class="text-xs uppercase font-extrabold tracking-widest text-brand-orange">Patrimoine Gastronomique
+            Babi</span>
+          <h2 class="font-serif font-black text-2xl sm:text-4xl text-brand-dark mt-1">
+            Les Grands Plats de Midi : Foutou, Placali & APF
+          </h2>
+          <p class="text-stone-500 text-xs sm:text-sm mt-1 max-w-xl">
+            Pour les vraies faims du déjeuner : sauces mijotées, poissons d'eau douce et bananes braisées.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+
+        <!-- Item 1: APF (Attiéké Poisson Frit) -->
+        <div onclick="openDishModal('apf')"
+          class="group cursor-pointer rounded-2xl sm:rounded-3xl p-3 sm:p-4 bg-stone-50 border border-stone-200/80 hover:border-brand-orange hover:shadow-card transition-all">
+          <div class="aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-stone-200 mb-3">
+            <img src="assets/images/APF.jfif" alt="APF Attiéké Poisson Frit"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">🟢 En
+            service</span>
+          <h4 class="font-serif font-bold text-sm sm:text-base text-brand-dark mt-1 truncate">L'APF Prestige</h4>
+          <p class="text-[11px] text-stone-500 truncate">Attiéké & Gros Poisson Frit</p>
+          <p class="text-xs font-black text-brand-orange mt-2">1 500 – 3 500 FCFA</p>
+        </div>
+
+        <!-- Item 2: Placali -->
+        <div onclick="openDishModal('placali')"
+          class="group cursor-pointer rounded-2xl sm:rounded-3xl p-3 sm:p-4 bg-stone-50 border border-stone-200/80 hover:border-brand-orange hover:shadow-card transition-all">
+          <div class="aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-stone-200 mb-3">
+            <img src="assets/images/Placali.jfif" alt="Placali Sauce Kpasso"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">🟢 En
+            service</span>
+          <h4 class="font-serif font-bold text-sm sm:text-base text-brand-dark mt-1 truncate">Le Placali Glissant</h4>
+          <p class="text-[11px] text-stone-500 truncate">Sauce Kpasso / Kopè & Poisson</p>
+          <p class="text-xs font-black text-brand-orange mt-2">1 000 – 2 500 FCFA</p>
+        </div>
+
+        <!-- Item 3: Foutou Banane -->
+        <div onclick="openDishModal('foutou')"
+          class="group cursor-pointer rounded-2xl sm:rounded-3xl p-3 sm:p-4 bg-stone-50 border border-stone-200/80 hover:border-brand-orange hover:shadow-card transition-all">
+          <div class="aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-stone-200 mb-3">
+            <img src="assets/images/foutou.jfif" alt="Foutou Banane Sauce Graine"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">🟢 En
+            service</span>
+          <h4 class="font-serif font-bold text-sm sm:text-base text-brand-dark mt-1 truncate">Le Foutou Banane</h4>
+          <p class="text-[11px] text-stone-500 truncate">Sauce Graine ou Claire fumée</p>
+          <p class="text-xs font-black text-brand-orange mt-2">1 500 – 3 000 FCFA</p>
+        </div>
+
+        <!-- Item 4: Banane Braisée -->
+        <div onclick="openDishModal('banane-braisee')"
+          class="group cursor-pointer rounded-2xl sm:rounded-3xl p-3 sm:p-4 bg-stone-50 border border-stone-200/80 hover:border-brand-orange hover:shadow-card transition-all">
+          <div class="aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-stone-200 mb-3">
+            <img src="assets/images/Banane braisée.jfif" alt="Banane braisée Koyo"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">🟢 En
+            service</span>
+          <h4 class="font-serif font-bold text-sm sm:text-base text-brand-dark mt-1 truncate">La Banane Braisée</h4>
+          <p class="text-[11px] text-stone-500 truncate">Koyo & Arachides grillées</p>
+          <p class="text-xs font-black text-brand-orange mt-2">300 – 1 000 FCFA</p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 5. SESSION CHEF YASSOI — LA ROUE GOURMANDE DU MENU PAR BUDGET -->
+  <!-- ========================================================================= -->
+  <section id="chef-yassoi"
+    class="py-16 md:py-24 bg-brand-peach border-t border-brand-peachDark/40 relative overflow-hidden">
+    <!-- Cercles subtils décoratifs -->
+    <div class="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-brand-peachDark/35 blur-3xl pointer-events-none">
+    </div>
+    <div
+      class="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-brand-pastelGreen/35 blur-3xl pointer-events-none">
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-10">
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/95 border border-brand-peachDark shadow-sm text-xs font-black text-brand-orange mb-3">
+          <span>🎡 L'ORACLE CULINAIRE D'ABIDJAN</span>
+        </div>
+        <h2 class="font-serif font-black text-3xl sm:text-4xl md:text-5xl text-brand-dark leading-tight">
+          Tu Ne Sais Pas Quoi Manger ?<br />
+          <span class="italic text-brand-orange font-normal">Demande au Chef Yassoi !</span>
+        </h2>
+        <p class="text-stone-600 text-xs sm:text-base mt-2.5 font-medium max-w-xl mx-auto">
+          Mets uniquement ton budget en FCFA. Le Chef Yassoi consulte les meilleures marmites du quartier et fait
+          tourner sa roue sacrée pour décider de ton repas.
+        </p>
+      </div>
+
+      <!-- Chef Yassoi Interactive Console: Budget Selector + Wheel of Fortune -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-6xl mx-auto">
+
+        <!-- Left: Budget Controls & Chef Dialogue (5 cols) -->
+        <div
+          class="lg:col-span-5 bg-white p-6 sm:p-8 rounded-3xl md:rounded-4xl shadow-card border border-stone-200/90 space-y-5">
+          <div class="flex items-center gap-3 pb-4 border-b border-stone-100">
+            <div
+              class="w-14 h-14 rounded-2xl bg-brand-orange text-white flex items-center justify-center shrink-0 shadow-md shadow-brand-orange/20 overflow-hidden p-1.5">
+              <img src="assets/images/logo-yassoi.svg" alt="Chef Yassoi" class="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h3 class="font-serif font-black text-lg text-brand-dark">Chef Yassoi</h3>
+              <p class="text-xs text-stone-500 font-semibold">« Donne-moi ton jeton, je décide de ton repas ! »</p>
+            </div>
+          </div>
+
+          <!-- Budget Input / Pills -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-black uppercase tracking-wider text-stone-600">Quel est ton budget ?</label>
+              <span id="displayBudgetVal"
+                class="font-black text-base text-brand-orange bg-brand-peach px-2.5 py-0.5 rounded-full">1 000
+                FCFA</span>
+            </div>
+
+            <!-- Quick Budget Presets -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              <button onclick="setYassoiBudget(500, this)" data-budget="500"
+                class="yassoi-budget-btn py-2 px-2 rounded-xl border border-stone-200 bg-stone-50 hover:border-brand-orange text-stone-700 text-xs font-black transition-all">
+                500 F
+              </button>
+              <button onclick="setYassoiBudget(1000, this)" data-budget="1000"
+                class="yassoi-budget-btn active py-2 px-2 rounded-xl border border-brand-orange bg-brand-orange text-white text-xs font-black transition-all">
+                1 000 F
+              </button>
+              <button onclick="setYassoiBudget(2500, this)" data-budget="2500"
+                class="yassoi-budget-btn py-2 px-2 rounded-xl border border-stone-200 bg-stone-50 hover:border-brand-orange text-stone-700 text-xs font-black transition-all">
+                2 500 F
+              </button>
+              <button onclick="setYassoiBudget(5000, this)" data-budget="5000"
+                class="yassoi-budget-btn py-2 px-2 rounded-xl border border-stone-200 bg-stone-50 hover:border-brand-orange text-stone-700 text-xs font-black transition-all">
+                5 000 F+
+              </button>
+            </div>
+
+            <!-- Slider précis -->
+            <div class="pt-2">
+              <input type="range" id="yassoiBudgetSlider" min="300" max="5000" step="100" value="1000"
+                oninput="onYassoiSliderChange(this.value)" class="w-full accent-brand-orange cursor-pointer" />
+              <div class="flex justify-between text-[10px] font-bold text-stone-400 mt-1">
+                <span>300 F (Gouassou)</span>
+                <span>2 500 F</span>
+                <span>5 000 F (Festin VIP)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plats en lice pour ce budget -->
+          <div class="p-3.5 bg-brand-peachLight rounded-2xl border border-brand-peachDark/50">
+            <span class="text-[10px] font-black uppercase text-stone-500 tracking-wider block mb-1.5">Plats en lice sur
+              la roue :</span>
+            <div id="yassoiCandidateTags" class="flex flex-wrap gap-1.5 text-[11px] font-bold text-stone-700">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Bouton Principal de Lancement de la Roue -->
+          <button id="spinWheelBtn" onclick="spinChefYassoiWheel()"
+            class="w-full py-4 rounded-2xl bg-brand-orange hover:bg-brand-orangeHover text-white font-black text-sm flex items-center justify-center gap-2.5 shadow-xl shadow-brand-orange/30 transition-all hover:scale-[1.02] active:scale-95">
+            <span class="text-xl">🎡</span>
+            <span>TOURNER LA ROUE DU CHEF YASSOI</span>
+          </button>
+        </div>
+
+        <!-- Right: The Wheel & Winner Reveal (7 cols) -->
+        <div class="lg:col-span-7 flex flex-col items-center justify-center relative">
+
+          <!-- Wheel Container with Needle Pointer -->
+          <div
+            class="relative w-[310px] h-[310px] sm:w-[380px] sm:h-[380px] md:w-[420px] md:h-[420px] flex items-center justify-center">
+
+            <!-- Needle / Flèche du haut -->
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none drop-shadow-xl">
+              <div
+                class="w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[28px] border-t-brand-orange">
+              </div>
+            </div>
+
+            <!-- Canvas de la Roue -->
+            <canvas id="yassoiCanvas" width="500" height="500"
+              class="w-full h-full rounded-full shadow-2xl border-8 border-white bg-white"></canvas>
+
+            <!-- Bouton central avec emblème officiel Yassoi -->
+            <button onclick="spinChefYassoiWheel()" aria-label="Lancer la roue"
+              class="absolute w-20 h-20 rounded-full bg-brand-dark text-white border-4 border-white shadow-2xl flex flex-col items-center justify-center hover:scale-105 active:scale-95 transition-transform z-20 overflow-hidden p-2">
+              <img src="assets/images/logo-yassoi.svg" alt="Yassoi" class="w-12 h-12 object-contain" />
+              <span class="text-[8px] font-black uppercase tracking-wider text-amber-400 -mt-1">YASSOI</span>
+            </button>
+          </div>
+
+          <!-- WINNER POPUP CARD (Apparaît dès que la roue s'arrête) -->
+          <div id="yassoiWinnerCard"
+            class="hidden mt-6 w-full max-w-lg bg-white rounded-3xl p-5 shadow-2xl border-2 border-brand-orange/70 transition-all">
+            <div class="flex items-center gap-4">
+              <div
+                class="w-20 h-20 rounded-2xl overflow-hidden bg-stone-900 shrink-0 border-2 border-brand-orange shadow-md">
+                <img id="yassoiWinnerImg" src="" alt="Plat gagnant" class="w-full h-full object-cover">
+              </div>
+              <div class="flex-1 min-w-0">
+                <span
+                  class="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full inline-block">
+                  🎉 VERDICT DU CHEF YASSOI
+                </span>
+                <h4 id="yassoiWinnerTitle" class="font-serif font-black text-xl text-brand-dark mt-1 truncate"></h4>
+                <p id="yassoiWinnerQuote" class="text-xs text-stone-500 italic mt-0.5 line-clamp-2"></p>
+                <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-stone-100">
+                  <span id="yassoiWinnerPrice" class="font-black text-brand-orange text-xs"></span>
+                  <div class="flex items-center gap-2">
+                    <button onclick="spinChefYassoiWheel()"
+                      class="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition-colors"
+                      title="Relancer">
+                      🔄
+                    </button>
+                    <button onclick="applyYassoiWinnerToMap()"
+                      class="px-3 py-1.5 rounded-full bg-brand-orange hover:bg-brand-orangeHover text-white font-extrabold text-[11px] flex items-center gap-1 shadow-md transition-all active:scale-95">
+                      <span>🗺️ Voir sur la carte</span>
+                      <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 6. CARTE INTERACTIVE DARK MODE AVEC NOUVELLE ANIMATION RADAR & BRAISES -->
+  <!-- ========================================================================= -->
+  <section id="carte" class="py-16 md:py-20 bg-stone-950 text-white relative overflow-hidden">
+
+    <div class="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-brand-orange/15 blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/90 border border-emerald-800 text-[11px] font-bold text-emerald-400 mb-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse-dot"></span>
+            <span>GÉOLOCALISATION HYPER-LOCALE & RADAR TEMPS RÉEL</span>
+          </div>
+          <h2 class="font-serif font-black text-2xl sm:text-4xl text-white">
+            Carte Interactive des Étals d'Abidjan
+          </h2>
+          <p class="text-stone-400 text-xs sm:text-sm mt-1 max-w-xl">
+            Cliquez sur un étal pour consulter sa fiche, son état en direct (🟢 En service / 🔴 Fermé) et lancer
+            l'itinéraire Google Maps.
+          </p>
+        </div>
+
+        <!-- Filter Controls & Animations Controls -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="startInteractiveMapTour()"
+            class="px-4 py-2 rounded-full text-xs font-extrabold bg-brand-orange text-white hover:bg-brand-orangeHover transition-all flex items-center gap-1.5 shadow-lg shadow-brand-orange/40 active:scale-95">
+            <i data-lucide="play-circle" class="w-4 h-4"></i>
+            <span>🎬 Visite Animée des Étals</span>
+          </button>
+
+          <button id="filterLiveOnlyBtn" onclick="toggleLiveOnlyFilter()"
+            class="px-3.5 py-2 rounded-full text-xs font-bold border border-emerald-500 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot"></span>
+            <span>En service uniquement</span>
+          </button>
+
+          <button onclick="resetMapCenter()"
+            class="px-3 py-2 rounded-full text-xs font-bold bg-stone-800 hover:bg-stone-700 text-stone-200 transition-colors flex items-center gap-1">
+            <i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Recentrer</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- MAP CONTAINER + SIDEBAR LIST -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+        <!-- Interactive Leaflet Map avec Faisceau Radar & Braises Animées -->
+        <div
+          class="lg:col-span-8 rounded-3xl overflow-hidden border border-stone-800 shadow-2xl relative min-h-[440px] sm:min-h-[500px] lg:min-h-[580px] bg-stone-900">
+
+          <div id="radarSweep" class="radar-beam"></div>
+
+          <div class="ember" style="top: 80%; left: 30%; animation-delay: 0s;"></div>
+          <div class="ember" style="top: 70%; left: 55%; animation-delay: 1.5s;"></div>
+          <div class="ember" style="top: 85%; left: 75%; animation-delay: 2.7s;"></div>
+          <div class="ember" style="top: 60%; left: 40%; animation-delay: 0.8s;"></div>
+
+          <div id="map" class="w-full h-full min-h-[440px] sm:min-h-[500px] lg:min-h-[580px] z-10"></div>
+
+          <!-- Indication Radar & Coordonnées -->
+          <div
+            class="absolute top-4 left-4 z-20 pointer-events-none bg-stone-900/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-700/80 text-xs font-semibold text-stone-200 shadow-lg flex items-center gap-2">
+            <i data-lucide="compass" class="w-4 h-4 text-brand-orange animate-spin" style="animation-duration: 9s;"></i>
+            <span>Radar Actif &bull; Abidjan 5.3484° N, 4.0305° W</span>
+          </div>
+
+          <!-- BANNIÈRE D'ÉTAT DU FILTRE STRICT SUR LA CARTE (Affiche uniquement ce qui est cherché) -->
+          <div id="mapFilterActiveNotice"
+            class="hidden absolute top-4 right-4 z-20 bg-brand-orange text-white px-3.5 py-1.5 rounded-2xl text-xs font-black shadow-2xl flex items-center gap-2 border border-white/20 animate-pulse">
+            <span id="mapFilterNoticeText">Filtre actif</span>
+            <button onclick="clearSearchInput()"
+              class="hover:bg-black/30 rounded-full w-5 h-5 flex items-center justify-center text-xs font-black"
+              title="Réinitialiser pour revoir tous les étals">&times;</button>
+          </div>
+
+          <!-- Sélecteur rapide de communes en bas de carte -->
+          <div class="absolute bottom-4 left-3 right-3 z-20 flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <button onclick="zoomToCommune('Yopougon')"
+              class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-stone-900/95 text-stone-300 hover:text-white hover:bg-brand-orange border border-stone-700 transition-all backdrop-blur-md">Yopougon</button>
+            <button onclick="zoomToCommune('Cocody')"
+              class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-stone-900/95 text-stone-300 hover:text-white hover:bg-brand-orange border border-stone-700 transition-all backdrop-blur-md">Cocody</button>
+            <button onclick="zoomToCommune('Marcory')"
+              class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-stone-900/95 text-stone-300 hover:text-white hover:bg-brand-orange border border-stone-700 transition-all backdrop-blur-md">Marcory</button>
+            <button onclick="zoomToCommune('Treichville')"
+              class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-stone-900/95 text-stone-300 hover:text-white hover:bg-brand-orange border border-stone-700 transition-all backdrop-blur-md">Treichville</button>
+            <button onclick="zoomToCommune('Plateau')"
+              class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-stone-900/95 text-stone-300 hover:text-white hover:bg-brand-orange border border-stone-700 transition-all backdrop-blur-md">Plateau</button>
+            <button onclick="zoomToCommune('Koumassi')"
+              class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-stone-900/95 text-stone-300 hover:text-white hover:bg-brand-orange border border-stone-700 transition-all backdrop-blur-md">Koumassi</button>
+          </div>
+        </div>
+
+        <!-- Sidebar List: Étals réels à proximité (Right side) -->
+        <div
+          class="lg:col-span-4 bg-stone-900 rounded-3xl p-4 sm:p-5 border border-stone-800 flex flex-col h-[520px] lg:h-[580px]">
+          <div class="flex items-center justify-between pb-3 border-b border-stone-800">
+            <div class="flex items-center gap-2">
+              <i data-lucide="flame" class="w-4 h-4 text-brand-orange"></i>
+              <h3 class="font-serif font-bold text-sm sm:text-base text-white">Étals vérifiés autour de vous</h3>
+            </div>
+            <span id="spotsCountBadge"
+              class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-stone-800 text-stone-300">
+              Chargement...
+            </span>
+          </div>
+
+          <div id="vendorSpotsList" class="overflow-y-auto space-y-3 pt-3 flex-1 pr-1">
+            <!-- Dynamically populated by JS avec les VRAIES PHOTOS fournies -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 6. SECTION À PROPOS, RÉGIE PUBS & PARTENARIATS DIRECTS (Nouvelle Section Demandée) -->
+  <!-- ========================================================================= -->
+  <section id="partenariats" class="py-16 md:py-24 bg-white border-t border-brand-peachDark/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+
+        <div class="lg:col-span-6 space-y-6">
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-peach border border-brand-peachDark text-xs font-extrabold text-brand-orange">
+            <i data-lucide="badge-dollar-sign" class="w-4 h-4"></i>
+            <span>ESPACE PARTENAIRES & ANNONCEURS</span>
+          </div>
+
+          <h2 class="font-serif font-black text-3xl sm:text-4xl lg:text-5xl text-brand-dark leading-tight">
+            Touchez les Abidjanais au Moment Exact Où Ils Ont Faim.
+          </h2>
+
+          <p class="text-stone-600 text-sm sm:text-base leading-relaxed">
+            <strong>MangeOù ?</strong> est la seule plateforme hyper-locale d'Abidjan réunissant quotidiennement des
+            milliers de consommateurs actifs (étudiants, cadres, familles) cherchant activement leur prochain repas.
+          </p>
+
+          <div class="space-y-4 pt-2">
+            <div class="p-4 rounded-2xl bg-stone-50 border border-stone-200 flex items-start gap-3.5">
+              <div
+                class="w-10 h-10 rounded-xl bg-brand-peach flex items-center justify-center text-brand-orange shrink-0 mt-0.5">
+                <i data-lucide="tv" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-stone-900">Bannière Sponsor Minutée (Régie B2B)</h4>
+                <p class="text-xs text-stone-500 mt-0.5">Idéal pour les marques de boissons (Gnamakoudji, jus, sodas),
+                  condiments et services télécoms.</p>
+              </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-stone-50 border border-stone-200 flex items-start gap-3.5">
+              <div
+                class="w-10 h-10 rounded-xl bg-brand-pastelGreen flex items-center justify-center text-emerald-800 shrink-0 mt-0.5">
+                <i data-lucide="award" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-stone-900">Pass Prioritaire "Étal Certifié"</h4>
+                <p class="text-xs text-stone-500 mt-0.5">Pour les restaurateurs et tenanciers d'étals : priorité
+                  d'affichage en tête de carte et macaron officiel.</p>
+              </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-stone-50 border border-stone-200 flex items-start gap-3.5">
+              <div
+                class="w-10 h-10 rounded-xl bg-brand-pastelPeach flex items-center justify-center text-brand-orange shrink-0 mt-0.5">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-stone-900">Événements & Street-Food Festivals</h4>
+                <p class="text-xs text-stone-500 mt-0.5">Activation sur le terrain lors des concours du meilleur Garba
+                  ou rassemblements culinaires.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <a href="https://wa.me/2250700000000?text=Bonjour%20MangeOù,%20je%20souhaite%20des%20informations%20sur%20les%20partenariats%20et%20la%20publicité"
+              target="_blank" rel="noopener noreferrer"
+              class="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95">
+              <i data-lucide="message-circle" class="w-4 h-4"></i>
+              <span>Discuter Directement sur WhatsApp Pro</span>
+            </a>
+            <span class="text-xs font-semibold text-stone-500 text-center sm:text-left">Réponse garantie en moins de
+              2h</span>
+          </div>
+        </div>
+
+        <div
+          class="lg:col-span-6 bg-brand-peachLight p-6 sm:p-8 rounded-3xl md:rounded-4xl border-2 border-brand-peachDark shadow-xl">
+          <div class="flex items-center justify-between pb-4 border-b border-brand-peachDark/60 mb-5">
+            <div>
+              <h3 class="font-serif font-black text-xl text-brand-dark">Demande de Partenariat Direct</h3>
+              <p class="text-xs text-stone-500">Remplissez ce formulaire pour recevoir notre grille tarifaire B2B.</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-brand-orange text-white flex items-center justify-center shrink-0">
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <form id="partnerForm" onsubmit="handlePartnerSubmit(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-extrabold text-stone-700 mb-1">Votre Nom ou Entreprise *</label>
+              <input type="text" id="partnerName" required placeholder="Ex: Brasserie d'Abidjan / Étal Chez Koffi"
+                class="w-full text-xs font-semibold p-3 rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-brand-orange transition-colors" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-extrabold text-stone-700 mb-1">Numéro Téléphone / WhatsApp *</label>
+                <input type="tel" id="partnerPhone" required placeholder="+225 07 00 00 00"
+                  class="w-full text-xs font-semibold p-3 rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-brand-orange transition-colors" />
+              </div>
+              <div>
+                <label class="block text-xs font-extrabold text-stone-700 mb-1">Commune Ciblée</label>
+                <select id="partnerCommune"
+                  class="w-full text-xs font-semibold p-3 rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-brand-orange transition-colors">
+                  <option value="Toutes">Tout Abidjan (Réseau Global)</option>
+                  <option value="Yopougon">Yopougon</option>
+                  <option value="Cocody">Cocody</option>
+                  <option value="Marcory">Marcory</option>
+                  <option value="Treichville">Treichville</option>
+                  <option value="Plateau">Plateau</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-extrabold text-stone-700 mb-1">Type de Projet</label>
+              <select id="partnerType"
+                class="w-full text-xs font-semibold p-3 rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-brand-orange transition-colors">
+                <option value="pub">Campagne Publicitaire & Sponsor Boisson</option>
+                <option value="pass">Abonnement Pass Vendeur Prioritaire</option>
+                <option value="event">Partenariat Événement / Festival</option>
+                <option value="autre">Autre proposition commerciale</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-extrabold text-stone-700 mb-1">Votre Message (Facultatif)</label>
+              <textarea id="partnerMsg" rows="3" placeholder="Précisez vos objectifs ou vos dates souhaitées..."
+                class="w-full text-xs font-semibold p-3 rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-brand-orange transition-colors resize-none"></textarea>
+            </div>
+
+            <button type="submit"
+              class="w-full py-3.5 rounded-xl bg-brand-orange hover:bg-brand-orangeHover text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-orange/30 transition-all active:scale-[0.98]">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              <span>Envoyer ma demande de partenariat</span>
+            </button>
+            <p class="text-[11px] text-center text-stone-500">Vos coordonnées restent strictement confidentielles.</p>
+          </form>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 7. COMMENT ÇA MARCHE (3 Étapes Simples) -->
+  <!-- ========================================================================= -->
+  <section id="comment-ca-marche" class="py-16 md:py-20 bg-brand-peach">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
+      <span class="text-xs uppercase font-extrabold tracking-widest text-brand-orange">Simplicité Radicale</span>
+      <h2 class="font-serif font-black text-3xl sm:text-4xl text-brand-dark mt-1 mb-12">
+        Comment Ça Marche ?
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
+
+        <div
+          class="bg-white/90 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-brand-peachDark shadow-soft flex flex-col items-center">
+          <div
+            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-pastelPink flex items-center justify-center text-brand-orange mb-5 shadow-sm">
+            <i data-lucide="search" class="w-7 h-7 sm:w-8 sm:h-8"></i>
+          </div>
+          <span class="text-[11px] font-black uppercase tracking-wider text-brand-orange mb-1">Étape 01</span>
+          <h3 class="font-serif font-bold text-lg sm:text-xl text-brand-dark">Choisis ton kiff</h3>
+          <p class="text-xs sm:text-sm text-stone-600 mt-2 font-medium leading-relaxed">
+            Tape ta spécialité (Garba, Alloco, Pain Chien, Beignets) ou sélectionne ta commune d'Abidjan.
+          </p>
+        </div>
+
+        <div
+          class="bg-white/90 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-brand-peachDark shadow-soft flex flex-col items-center">
+          <div
+            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-pastelGreen flex items-center justify-center text-emerald-700 mb-5 shadow-sm">
+            <i data-lucide="radio" class="w-7 h-7 sm:w-8 sm:h-8"></i>
+          </div>
+          <span class="text-[11px] font-black uppercase tracking-wider text-emerald-700 mb-1">Étape 02</span>
+          <h3 class="font-serif font-bold text-lg sm:text-xl text-brand-dark">Vérifie le direct</h3>
+          <p class="text-xs sm:text-sm text-stone-600 mt-2 font-medium leading-relaxed">
+            Consulte le statut vert 🟢 <strong>En service</strong> ou rouge 🔴 <strong>Fermé</strong> mis à jour par le
+            vendeur lui-même sur son téléphone.
+          </p>
+        </div>
+
+        <div
+          class="bg-white/90 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-brand-peachDark shadow-soft flex flex-col items-center">
+          <div
+            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-pastelPeach flex items-center justify-center text-brand-orange mb-5 shadow-sm">
+            <i data-lucide="map-pin" class="w-7 h-7 sm:w-8 sm:h-8"></i>
+          </div>
+          <span class="text-[11px] font-black uppercase tracking-wider text-brand-orange mb-1">Étape 03</span>
+          <h3 class="font-serif font-bold text-lg sm:text-xl text-brand-dark">Capte l'itinéraire GPS</h3>
+          <p class="text-xs sm:text-sm text-stone-600 mt-2 font-medium leading-relaxed">
+            Clique sur Google Maps. Rends-toi directement devant la table et mange chaud. Zéro frais de livraison.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 8. TESTIMONIALS AVIS DES GOURMETS D'ABIDJAN -->
+  <!-- ========================================================================= -->
+  <section id="avis" class="py-16 md:py-20 bg-brand-peachLight">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
+      <span class="text-xs uppercase font-extrabold tracking-widest text-brand-orange">La Voix du Pavé</span>
+      <h2 class="font-serif font-black text-3xl sm:text-4xl text-brand-dark mt-1 mb-12">
+        Ce Qu'en Disent les Abidjanais
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+
+        <div
+          class="bg-white p-7 rounded-3xl shadow-card border border-stone-100 flex flex-col justify-between text-left relative">
+          <div class="font-serif text-5xl text-stone-300 font-black leading-none mb-3">“</div>
+          <p class="text-stone-600 text-xs sm:text-sm leading-relaxed font-medium">
+            Je cherchais un bon garba croustillant à Yopougon Ananeraie à 14h. MangeOù m'a indiqué que Tantie Bahi était
+            en service. En 3 minutes de marche j'étais calé !
+          </p>
+          <div class="mt-6 pt-4 border-t border-stone-100 flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-brand-peachDark flex items-center justify-center font-bold text-brand-orange">
+              SK
+            </div>
+            <div>
+              <h4 class="font-bold text-xs text-stone-900">Serge Kouassi</h4>
+              <p class="text-[10px] text-stone-400">Yopougon, Abidjan</p>
+            </div>
+            <div class="ml-auto text-amber-400 flex text-xs">
+              ★★★★★
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white p-7 rounded-3xl shadow-card border border-stone-100 flex flex-col justify-between text-left relative">
+          <div class="font-serif text-5xl text-stone-300 font-black leading-none mb-3">“</div>
+          <p class="text-stone-600 text-xs sm:text-sm leading-relaxed font-medium">
+            Le bouton GPS direct est génial. Aucun besoin de demander au téléphone "C'est vers où déjà ?". Ça ouvre
+            directement Google Maps et ça t'emmène devant le poulet braisé.
+          </p>
+          <div class="mt-6 pt-4 border-t border-stone-100 flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-brand-pastelGreen flex items-center justify-center font-bold text-emerald-800">
+              AB
+            </div>
+            <div>
+              <h4 class="font-bold text-xs text-stone-900">Aïcha Bamba</h4>
+              <p class="text-[10px] text-stone-400">Cocody Angré, Abidjan</p>
+            </div>
+            <div class="ml-auto text-amber-400 flex text-xs">
+              ★★★★★
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white p-7 rounded-3xl shadow-card border border-stone-100 flex flex-col justify-between text-left relative">
+          <div class="font-serif text-5xl text-stone-300 font-black leading-none mb-3">“</div>
+          <p class="text-stone-600 text-xs sm:text-sm leading-relaxed font-medium">
+            Je vends des beignets Gnonmi et Boule-boule à Cocody. Avec mon bouton vert "En service", tous les étudiants
+            de l'université voient que le feu est allumé !
+          </p>
+          <div class="mt-6 pt-4 border-t border-stone-100 flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-brand-pastelPeach flex items-center justify-center font-bold text-brand-orange">
+              TA
+            </div>
+            <div>
+              <h4 class="font-bold text-xs text-stone-900">Tantie Ahou</h4>
+              <p class="text-[10px] text-stone-400">Vendeuse Beignets, Cocody</p>
+            </div>
+            <div class="ml-auto text-amber-400 flex text-xs">
+              ★★★★★
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 9. DARK CURVED BANNER AVEC PHOTOS LOCALES -->
+  <!-- ========================================================================= -->
+  <section class="py-12 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div
+        class="relative bg-stone-900 rounded-3xl md:rounded-4xl p-8 sm:p-12 md:p-16 overflow-hidden text-center text-white shadow-2xl">
+
+        <div
+          class="hidden md:block absolute -left-10 top-1/2 -translate-y-1/2 w-48 h-48 rounded-full overflow-hidden border-4 border-stone-800 shadow-2xl rotate-12 pointer-events-none opacity-85">
+          <img src="assets/images/ALLOCO.jfif" alt="Alloco croustillant" class="w-full h-full object-cover">
+        </div>
+
+        <div
+          class="hidden md:block absolute -right-10 top-1/2 -translate-y-1/2 w-48 h-48 rounded-full overflow-hidden border-4 border-stone-800 shadow-2xl -rotate-12 pointer-events-none opacity-85">
+          <img src="assets/images/choukouya.jfif" alt="Choukouya braisé" class="w-full h-full object-cover">
+        </div>
+
+        <div class="relative z-10 max-w-2xl mx-auto space-y-4">
+          <span
+            class="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-orange text-white">
+            Faim immédiate à Abidjan ?
+          </span>
+          <h2 class="font-serif font-black text-2xl sm:text-4xl md:text-5xl text-brand-peachDark leading-tight">
+            Les Saveurs de la Rue T'Attendent Maintenant.
+          </h2>
+          <p class="text-stone-300 text-xs sm:text-sm font-medium">
+            Choisis ta commune, active la carte live et laisse le GPS te guider sans intermédiaire.
+          </p>
+          <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="#carte"
+              class="w-full sm:w-auto px-8 py-3.5 rounded-full bg-brand-orange text-white hover:bg-brand-orangeHover font-bold text-sm shadow-xl shadow-brand-orange/30 transition-all">
+              Ouvrir la Carte Live
+            </a>
+            <button onclick="toggleVendorDrawer()"
+              class="w-full sm:w-auto px-6 py-3.5 rounded-full bg-stone-800 text-stone-200 hover:text-white hover:bg-stone-700 font-bold text-sm border border-stone-700 transition-all">
+              Tu es vendeur ? Rejoindre l'annuaire
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 10. FOOTER AVEC ACCÈS DISCRET VENDEUR & ADMIN -->
+  <!-- ========================================================================= -->
+  <footer class="bg-stone-950 text-stone-400 py-16 border-t border-stone-900 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-stone-800">
+
+        <div class="md:col-span-2 space-y-4">
+          <div class="flex items-center gap-2">
+            <img src="assets/images/logo-yassoi-horizontal-white.svg" alt="Yassoi On Mange Où ? - Street-Food Abidjan" class="h-12 w-auto" />
+          </div>
+          <p class="text-stone-400 text-xs leading-relaxed max-w-sm">
+            La première plateforme PWA de géolocalisation de street-food à Abidjan. Conçue pour valoriser les
+            restaurateurs locaux sans commissions et connecter les gourmets en direct.
+          </p>
+          <div class="text-[11px] text-stone-500">
+            Abidjan, Côte d'Ivoire &bull; Zéro logistique de livraison &bull; Google Maps Direct
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-serif font-bold text-white text-sm mb-3">Communes Couvertes</h4>
+          <ul class="space-y-2">
+            <li><button onclick="zoomToCommune('Yopougon')"
+                class="hover:text-white text-left transition-colors">Yopougon (Siporex, Selmer)</button></li>
+            <li><button onclick="zoomToCommune('Cocody')" class="hover:text-white text-left transition-colors">Cocody
+                (Angré, Blockhauss)</button></li>
+            <li><button onclick="zoomToCommune('Marcory')" class="hover:text-white text-left transition-colors">Marcory
+                (GFCI, Zone 4)</button></li>
+            <li><button onclick="zoomToCommune('Treichville')"
+                class="hover:text-white text-left transition-colors">Treichville (Avenue 8)</button></li>
+            <li><button onclick="zoomToCommune('Plateau')" class="hover:text-white text-left transition-colors">Plateau
+                (Centre-Ville)</button></li>
+            <li><button onclick="zoomToCommune('Koumassi')"
+                class="hover:text-white text-left transition-colors">Koumassi (Remblais)</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-serif font-bold text-white text-sm mb-3">Spécialités Populaires</h4>
+          <ul class="space-y-2">
+            <li><button onclick="setSearchValue('Garba')" class="hover:text-white text-left transition-colors">Le Garba
+                National</button></li>
+            <li><button onclick="setSearchValue('Alloco')" class="hover:text-white text-left transition-colors">L'Alloco
+                Piment & Œuf</button></li>
+            <li><button onclick="setSearchValue('Choukouya')"
+                class="hover:text-white text-left transition-colors">Choukouya Braisé</button></li>
+            <li><button onclick="setSearchValue('Pain Chien')" class="hover:text-white text-left transition-colors">Pain
+                Chien & Penavona</button></li>
+            <li><button onclick="setSearchValue('Gnonmi')" class="hover:text-white text-left transition-colors">Gnonmi &
+                Beignets</button></li>
+            <li><button onclick="setSearchValue('Fruits Frais')"
+                class="hover:text-white text-left transition-colors">Fruits Frais Découpés</button></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-serif font-bold text-white text-sm mb-3">Espaces Sécurisés</h4>
+          <ul class="space-y-2.5">
+            <li>
+              <button onclick="toggleVendorDrawer()"
+                class="text-left hover:text-brand-orange transition-colors flex items-center gap-1.5">
+                <i data-lucide="store" class="w-3.5 h-3.5"></i>
+                <span>Espace Vendeur Mobile</span>
+              </button>
+            </li>
+            <li>
+              <a href="#partenariats"
+                class="text-left hover:text-brand-orange transition-colors flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Régie Pubs & Sponsors</span>
+              </a>
+            </li>
+            <li class="pt-4">
+              <button onclick="openSecretAdminPrompt()"
+                class="text-[10px] text-stone-600 hover:text-stone-400 transition-colors flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3 h-3"></i>
+                <span>Supervision Système (/backoffice)</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-stone-500 text-[11px]">
+        <p>&copy; 2026 MangeOù ? — Développé pour la street-food ivoirienne avec PostGIS & Leaflet.</p>
+        <div class="flex items-center gap-6">
+          <a href="#partenariats" class="hover:text-stone-300">Devenir Partenaire</a>
+          <a href="#" class="hover:text-stone-300">Mentions Légales</a>
+          <span class="text-stone-600">PWA Offline Ready</span>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: FICHE VENDEUR DÉTAILLÉE AVEC BOUTON ITINÉRAIRE GPS UNIQUE -->
+  <!-- ========================================================================= -->
+  <div id="vendorModal"
+    class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity">
+    <div
+      class="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-stone-100 flex flex-col max-h-[90vh]">
+
+      <div class="relative h-52 bg-stone-900 shrink-0">
+        <img id="modalVendorImg" src="" alt="Photo étal" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent"></div>
+
+        <button onclick="closeVendorModal()"
+          class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition-colors"
+          aria-label="Fermer la fiche">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <div id="modalStatusBadge" class="absolute top-4 left-4">
+        </div>
+
+        <div class="absolute bottom-4 left-4 right-4 text-white">
+          <span id="modalVendorCommune" class="text-xs font-bold uppercase tracking-wider text-brand-peachDark"></span>
+          <h3 id="modalVendorName" class="font-serif font-black text-2xl leading-tight"></h3>
+        </div>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4">
+
+        <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-stone-400">Plat Signature</span>
+            <p id="modalVendorSpecialty" class="font-serif font-bold text-lg text-stone-900"></p>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] uppercase font-bold text-stone-400">Prix Moyen</span>
+            <p id="modalVendorPrice" class="font-bold text-brand-orange text-base"></p>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-stone-400 mb-1">Description de l'étal</h4>
+          <p id="modalVendorDesc" class="text-xs sm:text-sm text-stone-600 leading-relaxed"></p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="clock" class="w-4 h-4 text-stone-500"></i>
+            <div>
+              <p class="text-xs font-bold text-stone-800">Horaires de service</p>
+              <p id="modalVendorHours" class="text-[11px] text-stone-500">11h30 - 22h00</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-xs font-bold text-emerald-700">Distance</p>
+            <p id="modalVendorDistance" class="text-[11px] font-semibold text-stone-600">~ 250 m</p>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <a id="modalGpsLink" href="#" target="_blank" rel="noopener noreferrer"
+            class="w-full py-4 rounded-2xl bg-brand-orange text-white hover:bg-brand-orangeHover font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-brand-orange/30 transition-all active:scale-[0.98]">
+            <i data-lucide="map" class="w-5 h-5"></i>
+            <span>🗺️ Obtenir l'Itinéraire GPS (Google Maps)</span>
+          </a>
+          <p class="text-[11px] text-center text-stone-400 mt-2">
+            Pas de livraison ni de messagerie. Rendez-vous sur place pour déguster chaud !
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- DRAWER: ESPACE VENDEUR MOBILE-FIRST (Simulation interactive du Dashboard) -->
+  <!-- ========================================================================= -->
+  <div id="vendorDrawer" onclick="handleVendorBackdropClick(event)"
+    class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-opacity">
+    <div onclick="event.stopPropagation()"
+      class="bg-white w-full max-w-lg max-h-[90vh] rounded-3xl shadow-2xl flex flex-col border border-brand-peachDark overflow-hidden transform transition-all">
+
+      <div class="p-5 bg-brand-peach border-b border-brand-peachDark flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-orange text-white flex items-center justify-center shadow-sm">
+            <i data-lucide="store" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-serif font-black text-lg text-brand-dark">Espace Vendeur</h3>
+            <p class="text-[10px] text-stone-500 font-bold uppercase tracking-wider">Dashboard Mobile-First (RLS
+              protégé)</p>
+          </div>
+        </div>
+        <button onclick="toggleVendorDrawer()"
+          class="w-8 h-8 rounded-full bg-white text-stone-700 flex items-center justify-center hover:bg-stone-100 hover:text-brand-orange transition-colors shadow-xs">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-5 flex-1">
+
+        <div class="flex items-center gap-3 p-3.5 rounded-2xl bg-stone-50 border border-stone-200">
+          <div
+            class="w-12 h-12 rounded-full bg-brand-orange text-white font-serif font-black text-lg flex items-center justify-center shrink-0">
+            TB
+          </div>
+          <div>
+            <h4 class="font-bold text-sm text-stone-900">Garbadrome Tantie Bahi</h4>
+            <p class="text-xs text-stone-500">Yopougon Siporex &bull; ID #VND-8492</p>
+          </div>
+        </div>
+
+        <div class="p-5 rounded-3xl bg-brand-peachLight border-2 border-brand-peachDark text-center space-y-3">
+          <span class="text-xs uppercase font-extrabold tracking-wider text-stone-500">Statut en direct de votre
+            étal</span>
+
+          <div class="flex items-center justify-center">
+            <button id="vendorToggleStatusBtn" onclick="toggleSellerServiceState()"
+              class="w-full py-4 px-6 rounded-2xl font-black text-base transition-all shadow-lg flex items-center justify-center gap-3 bg-emerald-600 text-white hover:bg-emerald-700">
+              <span class="w-3.5 h-3.5 rounded-full bg-white animate-pulse-dot"></span>
+              <span id="vendorStatusText">[ EN SERVICE ]</span>
+            </button>
+          </div>
+          <p class="text-[11px] text-stone-500">
+            Cliquez pour basculer en <strong>[ FERMÉ ]</strong> à la fin de votre service. La carte se met à jour
+            immédiatement pour tous les clients d'Abidjan.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white border border-stone-200 space-y-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="crosshair" class="w-4 h-4 text-brand-orange"></i>
+            <h4 class="font-bold text-xs text-stone-900">Position GPS de l'étal</h4>
+          </div>
+          <p class="text-xs text-stone-500">
+            Mettez à jour vos coordonnées GPS actuelles pour diriger les clients directement devant votre table.
+          </p>
+          <button onclick="updateSellerGpsLocation()"
+            class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="navigation-2" class="w-3.5 h-3.5 text-brand-orange"></i>
+            <span id="gpsUpdateBtnText">Actualiser ma position GPS</span>
+          </button>
+          <p id="gpsCoordText" class="text-[10px] text-center text-stone-400">Position: 5.3411° N, -4.0722° W (Yopougon)
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white border border-stone-200 space-y-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="edit-3" class="w-4 h-4 text-brand-orange"></i>
+            <h4 class="font-bold text-xs text-stone-900">Plat du jour & Tarifs</h4>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-stone-600 mb-1">Plat proposé aujourd'hui</label>
+            <input type="text" id="sellerDishInput" value="Garba Thon Croustillant (Piment rouge frais)"
+              class="w-full text-xs font-semibold p-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-brand-orange" />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-stone-600 mb-1">Fourchette de prix (FCFA)</label>
+            <input type="text" id="sellerPriceInput" value="500 – 1 500 FCFA"
+              class="w-full text-xs font-semibold p-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-brand-orange" />
+          </div>
+
+          <button onclick="saveSellerProfileChanges()"
+            class="w-full py-2.5 rounded-xl bg-brand-orange hover:bg-brand-orangeHover text-white text-xs font-bold transition-colors">
+            Enregistrer les modifications
+          </button>
+        </div>
+
+        <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800">
+          <strong>Cloisonnement RLS Supabase :</strong> Vous ne pouvez voir et modifier que les données rattachées à
+          votre <code class="bg-amber-100 px-1 py-0.5 rounded">auth.uid()</code>.
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CONSOLE D'ADMINISTRATION SECRÈTE (/backoffice-access-x99) -->
+  <!-- ========================================================================= -->
+  <div id="adminModal"
+    class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div
+      class="bg-stone-950 text-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-stone-800 flex flex-col max-h-[90vh]">
+
+      <div class="p-5 bg-stone-900 border-b border-stone-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-8 h-8 rounded-lg bg-red-600/20 text-red-400 border border-red-500/30 flex items-center justify-center font-bold">
+            <i data-lucide="shield" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-mono text-sm font-bold text-stone-200">/backoffice-access-x99 [PANOPTIC VIEW]</h3>
+            <p class="text-[10px] text-stone-500 font-mono">Row Level Security Strict: Role 'admin' Verified</p>
+          </div>
+        </div>
+        <button onclick="closeAdminModal()" class="text-stone-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-6 font-mono text-xs">
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 bg-stone-900 rounded-xl border border-stone-800">
+            <span class="text-stone-500 text-[10px] block">ÉTALS INSCRITS</span>
+            <span class="text-xl font-bold text-white mt-1 block">184</span>
+          </div>
+          <div class="p-3 bg-stone-900 rounded-xl border border-stone-800">
+            <span class="text-stone-500 text-[10px] block">EN SERVICE LIVE</span>
+            <span class="text-xl font-bold text-emerald-400 mt-1 block">142</span>
+          </div>
+          <div class="p-3 bg-stone-900 rounded-xl border border-stone-800">
+            <span class="text-stone-500 text-[10px] block">CLICS GPS (24H)</span>
+            <span class="text-xl font-bold text-brand-orange mt-1 block">3 120</span>
+          </div>
+        </div>
+
+        <div class="p-4 bg-stone-900 rounded-2xl border border-stone-800 space-y-3">
+          <h4 class="font-bold text-stone-200 text-xs flex items-center gap-1.5">
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-brand-orange"></i>
+            RECHERCHES PAR COMMUNE (DERNIÈRES 24H)
+          </h4>
+          <div class="space-y-2">
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Yopougon (Garba, Choukouya, Pain Chien)</span>
+                <span class="text-brand-orange">42%</span>
+              </div>
+              <div class="w-full bg-stone-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-brand-orange h-full rounded-full" style="width: 42%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Cocody (Alloco, Beignets, Gnonmi)</span>
+                <span class="text-emerald-400">28%</span>
+              </div>
+              <div class="w-full bg-stone-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-emerald-400 h-full rounded-full" style="width: 28%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span>Marcory (Choukouya, Pain Brochette)</span>
+                <span class="text-amber-400">18%</span>
+              </div>
+              <div class="w-full bg-stone-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-amber-400 h-full rounded-full" style="width: 18%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-stone-900 rounded-2xl border border-stone-800 space-y-2">
+          <h4 class="font-bold text-stone-200 text-xs flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-400"></i>
+            RÉGIE PUBLICITAIRE SPONSOR & MINUTEUR B2B
+          </h4>
+          <p class="text-stone-400 text-[11px]">
+            Campagne sponsorisée actuelle : <em>"Boisson Gnamakoudji Frais Glacé"</em>.
+          </p>
+          <div class="flex items-center justify-between p-2.5 bg-stone-950 rounded-xl border border-stone-800">
+            <span>Minuteur de rotation bannière :</span>
+            <span class="font-bold text-brand-orange">03h : 42m : 15s restant</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC & ENGINE : 100% PHOTOS FOURNIES, CARTE, RADAR & TOUCH -->
+  <!-- ========================================================================= -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. CATALOGUE OFFICIEL AVEC LES VRAIES PHOTOS FOURNIES (PAR NOM EXACT)
+    // -------------------------------------------------------------
+    const IVORIAN_CATALOG = [
+      {
+        id: 'garba',
+        name: 'Le Garba National',
+        category: 'sale',
+        family: 'incontournables',
+        price: '500 – 1 500 FCFA',
+        desc: 'Attiéké fin, thon frit croustillant, piment rouge frais pilé, oignons et dés de tomate.',
+        image: 'assets/images/GARBA.jfif',
+        keywords: ['garba', 'attieke', 'thon', 'poisson', 'garbadrome', 'piment']
+      },
+      {
+        id: 'alloco',
+        name: 'L’Alloco & Piment Chaud',
+        category: 'sale',
+        family: 'incontournables',
+        price: '300 – 1 000 FCFA',
+        desc: 'Bananes plantains mûres frites en dés dorés, servies avec sauce tomate pimentée et œuf dur.',
+        image: 'assets/images/ALLOCO.jfif',
+        keywords: ['alloco', 'aloco', 'banane', 'plantain', 'frit', 'oeuf']
+      },
+      {
+        id: 'choukouya',
+        name: 'Le Choukouya d’Agneau Braisé',
+        category: 'sale',
+        family: 'braises',
+        price: '2 000 – 5 000 FCFA',
+        desc: 'Morceaux de viande marinés et cuits à l’étouffée avant d’être grillés au charbon ardent avec kankankan.',
+        image: 'assets/images/choukouya.jfif',
+        keywords: ['choukouya', 'viande', 'mouton', 'agneau', 'kankankan', 'braise']
+      },
+      {
+        id: 'apf',
+        name: 'L’APF (Attiéké Poisson Frit)',
+        category: 'sale',
+        family: 'incontournables',
+        price: '1 500 – 3 500 FCFA',
+        desc: 'Attiéké de qualité supérieure servi avec une grosse dorade ou carpe frite entière et crudités.',
+        image: 'assets/images/APF.jfif',
+        keywords: ['apf', 'attieke poisson frit', 'dorade', 'carpe', 'poisson frit']
+      },
+      {
+        id: 'banane-braisee',
+        name: 'La Banane Braisée (Koyo)',
+        category: 'sale',
+        family: 'braises',
+        price: '300 – 1 000 FCFA',
+        desc: 'Banane plantain braisée au charbon de bois, servie chaude avec arachides grillées fraîches.',
+        image: 'assets/images/Banane braisée.jfif',
+        keywords: ['banane braisee', 'koyo', 'arachide', 'plantain braise']
+      },
+      {
+        id: 'foutou',
+        name: 'Le Foutou Banane & Sauce Graine',
+        category: 'traditionnels',
+        family: 'traditionnels',
+        price: '1 500 – 3 000 FCFA',
+        desc: 'Foutou banane pilé traditionnellement, servi avec sauce graine onctueuse ou sauce claire pimentée.',
+        image: 'assets/images/foutou.jfif',
+        keywords: ['foutou', 'foutou banane', 'sauce graine', 'sauce claire', 'dejeuner']
+      },
+      {
+        id: 'placali',
+        name: 'Le Placali Sauce Kpasso / Kopè',
+        category: 'traditionnels',
+        family: 'traditionnels',
+        price: '1 000 – 2 500 FCFA',
+        desc: 'Pâte de manioc fermentée chaude servie avec sauce gombo gluant kpasso et poisson frais fumé.',
+        image: 'assets/images/Placali.jfif',
+        keywords: ['placali', 'kpasso', 'kope', 'gombo', 'manioc']
+      },
+      {
+        id: 'pain-chien',
+        name: 'Le Pain Chien Chaud de Rue',
+        category: 'vendeuses',
+        family: 'pains',
+        price: '300 – 800 FCFA',
+        desc: 'Sandwich de rue culte garni de saucisses chaudes, sauce tomate épicée, oignons et mayonnaise.',
+        image: 'assets/images/Pain chien_.jfif',
+        keywords: ['pain chien', 'sandwich', 'pain', 'saucisse', 'vendeuse pain']
+      },
+      {
+        id: 'pain-condiment',
+        name: 'Le Pain Condiment (Penavona)',
+        category: 'vendeuses',
+        family: 'pains',
+        price: '500 – 1 200 FCFA',
+        desc: 'Baguette fourrée d’œufs frits, spaghetti assaisonnés, sardines ou thon et mayonnaise kankankan.',
+        image: 'assets/images/pain avec condiment .jfif',
+        keywords: ['pain avec condiment', 'penavona', 'spaghetti', 'sardine', 'oeuf', 'pain']
+      },
+      {
+        id: 'gnonmi',
+        name: 'Le Gnonmi & Baka Traditionnel',
+        category: 'vendeuses',
+        family: 'beignets',
+        price: '100 – 500 FCFA',
+        desc: 'Beignets traditionnels de mil fermenté moelleux servis avec bouillie chaude (Baka).',
+        image: 'assets/images/Gnonmi.jfif',
+        keywords: ['gnonmi', 'baka', 'beignets', 'mil', 'vendeuse beignets', 'gouter']
+      },
+      {
+        id: 'boule-boule',
+        name: 'Les Boule-Boule Moelleux',
+        category: 'vendeuses',
+        family: 'beignets',
+        price: '100 – 300 FCFA',
+        desc: 'Beignets ronds à la farine de blé dorés à point, sucrés et aériens, vendus au coin de rue.',
+        image: 'assets/images/boule boule.jfif',
+        keywords: ['boule boule', 'beignets', 'farine', 'sucre', 'vendeuse beignets']
+      },
+      {
+        id: 'galettes-rouges',
+        name: 'Les Galettes Rouges Croustillantes',
+        category: 'vendeuses',
+        family: 'beignets',
+        price: '100 – 400 FCFA',
+        desc: 'Galettes salées croustillantes relevées au piment doux et épices locales.',
+        image: 'assets/images/galettes rouges .jfif',
+        keywords: ['galettes rouges', 'beignets sales', 'vendeuse beignets']
+      },
+      {
+        id: 'fruits-frais',
+        name: 'Fruits Frais Découpés & Coco Râpé Grillé',
+        category: 'vendeuses',
+        family: 'fruits',
+        price: '200 – 1 000 FCFA',
+        desc: 'Barquettes d’ananas de Bonoua, pastèque glacée, mangues et lamelles de coco grillé caramélisé.',
+        image: 'assets/images/Du Coco râpé grillé.jfif',
+        keywords: ['fruits frais', 'coco rape grille', 'ananas', 'pasteque', 'mangue', 'vendeuse fruits']
+      },
+      {
+        id: 'chips-plantain',
+        name: 'Chips de Banane Plantain Croustillantes',
+        category: 'vendeuses',
+        family: 'fruits',
+        price: '200 – 500 FCFA',
+        desc: 'Lamelles de plantain tranchées fin et frites au sel ou piment, emballées artisanalement.',
+        image: 'assets/images/Crispy Plantain Chips - KikiFoodies.jfif',
+        keywords: ['chips plantain', 'banane', 'chips', 'gouter']
+      },
+      {
+        id: 'yaourt-grotto',
+        name: 'Le Bon Yaourt Grotto Artisanal',
+        category: 'vendeuses',
+        family: 'fruits',
+        price: '200 – 500 FCFA',
+        desc: 'Yaourt onctueux glacé en pot avec bâtonnet, parfait pour se désaltérer sous le soleil d’Abidjan.',
+        image: 'assets/images/Du bon yaourt grotto.jfif',
+        keywords: ['yaourt grotto', 'grotto', 'glace', 'yaourt']
+      },
+      {
+        id: 'wintchin',
+        name: 'Le Wintchin (Riz Sauté Street-Food)',
+        category: 'sale',
+        family: 'incontournables',
+        price: '500 – 1 500 FCFA',
+        desc: 'Riz gras et sauté à la tomate avec petits légumes, servi avec poulet ou viande braisée.',
+        image: 'assets/images/wintchin.jfif',
+        keywords: ['wintchin', 'riz', 'riz saute', 'riz gras']
+      },
+      {
+        id: 'haricot',
+        name: 'Les Haricots Rouges Braisés (Poroto)',
+        category: 'sale',
+        family: 'incontournables',
+        price: '300 – 800 FCFA',
+        desc: 'Haricots mijotés au piment et huile rouge, accompagnement parfait pour alloco et garba.',
+        image: 'assets/images/haricot.jfif',
+        keywords: ['haricot', 'poroto', 'accompagnement']
+      }
+    ];
+
+    // -------------------------------------------------------------
+    // 2. DONNÉES DES ÉTALS VRAIS AVEC VRAIES PHOTOS & COORDONNÉES GPS
+    // -------------------------------------------------------------
+    const VENDORS_DATABASE = [
+      {
+        id: 'v1',
+        name: 'Garbadrome Tantie Bahi',
+        commune: 'Yopougon',
+        quarter: 'Siporex',
+        lat: 5.3411,
+        lng: -4.0722,
+        isLive: true,
+        specialty: 'Le Garba National Thon Frais',
+        dishKey: 'garba',
+        tags: ['garba', 'attieke', 'thon', 'poisson', 'piment', 'garbadrome'],
+        price: '500 – 1 500 FCFA',
+        hours: '08h00 – 18h30',
+        distance: '180 m',
+        desc: 'Le repaire du thon croustillant à Siporex. Huile propre, piment frais pilé minute et attiéké moelleux.',
+        image: 'assets/images/GARBA.jfif'
+      },
+      {
+        id: 'v2',
+        name: 'Chez Akissi — Reine de l’Alloco',
+        commune: 'Cocody',
+        quarter: 'Angré 8ème Tranche',
+        lat: 5.3855,
+        lng: -3.9782,
+        isLive: true,
+        specialty: 'Alloco Piment & Œuf Dur',
+        dishKey: 'alloco',
+        tags: ['alloco', 'aloco', 'banane', 'plantain', 'oeuf', 'piment'],
+        price: '500 – 1 800 FCFA',
+        hours: '15h30 – 23h30',
+        distance: '420 m',
+        desc: 'Bananes plantains d’or découpées en dés fins, frites à point avec sauce tomate pimentée maison.',
+        image: 'assets/images/ALLOCO.jfif'
+      },
+      {
+        id: 'v3',
+        name: 'Choukouya VIP Marcory',
+        commune: 'Marcory',
+        quarter: 'GFCI / Bvd du Gabon',
+        lat: 5.3015,
+        lng: -3.9892,
+        isLive: true,
+        specialty: 'Choukouya d’Agneau Ardent',
+        dishKey: 'choukouya',
+        tags: ['choukouya', 'agneau', 'mouton', 'viande', 'kankankan', 'braise'],
+        price: '2 000 – 5 000 FCFA',
+        hours: '18h00 – 03h30',
+        distance: '850 m',
+        desc: 'Grillé minute au charbon de bois. Servi dans du papier sulfurisé avec oignons et épices kankankan.',
+        image: 'assets/images/choukouya.jfif'
+      },
+      {
+        id: 'v4',
+        name: 'Chez Maman Pain Condiment & Pain Chien',
+        commune: 'Yopougon',
+        quarter: 'Selmer Carrefour Keneya',
+        lat: 5.3360,
+        lng: -4.0610,
+        isLive: true,
+        specialty: 'Pain Chien & Penavona Spécial',
+        dishKey: 'pain-chien',
+        tags: ['pain-chien', 'pain chien', 'pain condiment', 'penavona', 'sandwich', 'pain'],
+        price: '400 – 1 200 FCFA',
+        hours: '17h00 – 03h00',
+        distance: '620 m',
+        desc: 'Demi-baguette croustillante fourrée de saucisses, spaghetti assaisonnés, œufs frits et mayonnaise épicée.',
+        image: 'assets/images/pain avec condiment .jfif'
+      },
+      {
+        id: 'v5',
+        name: 'Tantie Ahou — Beignets Chauds & Gnonmi',
+        commune: 'Cocody',
+        quarter: 'Blockhauss Village',
+        lat: 5.3280,
+        lng: -4.0040,
+        isLive: true,
+        specialty: 'Gnonmi Moelleux, Boule-Boule & Baka',
+        dishKey: 'gnonmi',
+        tags: ['gnonmi', 'beignets', 'boule-boule', 'boule boule', 'galettes rouges', 'baka'],
+        price: '100 – 500 FCFA',
+        hours: '06h00 – 11h00 & 16h00 – 19h30',
+        distance: '340 m',
+        desc: 'Le rendez-vous incontournable des beignets frais du matin et de 16h avec galettes rouges et baka parfumé.',
+        image: 'assets/images/Gnonmi.jfif'
+      },
+      {
+        id: 'v6',
+        name: 'Le Kiosque Vitaminé — Fruits Frais d’Aya',
+        commune: 'Plateau',
+        quarter: 'Rue du Commerce',
+        lat: 5.3245,
+        lng: -4.0195,
+        isLive: true,
+        specialty: 'Ananas, Pastèque Glacée & Coco Râpé',
+        dishKey: 'fruits-frais',
+        tags: ['fruits-frais', 'fruits frais', 'ananas', 'pasteque', 'mangue', 'coco', 'coco rape grille'],
+        price: '300 – 1 000 FCFA',
+        hours: '10h30 – 18h00',
+        distance: '910 m',
+        desc: 'Fruits frais locaux tranchés sous vos yeux et barquettes de coco râpé grillé prêt à emporter.',
+        image: 'assets/images/Du Coco râpé grillé.jfif'
+      },
+      {
+        id: 'v7',
+        name: 'Maquis Le Foutou d’Or',
+        commune: 'Treichville',
+        quarter: 'Avenue 8 Rue 12',
+        lat: 5.3090,
+        lng: -4.0110,
+        isLive: true,
+        specialty: 'Foutou Banane & Placali Kpasso',
+        dishKey: 'foutou',
+        tags: ['foutou', 'foutou banane', 'placali', 'sauce graine', 'sauce claire', 'kpasso'],
+        price: '1 500 – 3 500 FCFA',
+        hours: '11h30 – 17h00',
+        distance: '750 m',
+        desc: 'Foutou pilé au mortier traditionnel chaque matin et placali glissant servi avec poissons d’eau douce fumés.',
+        image: 'assets/images/foutou.jfif'
+      },
+      {
+        id: 'v8',
+        name: 'Koyo & Banane Braisée de Tantie N’Goran',
+        commune: 'Koumassi',
+        quarter: 'Remblais Bvd du 7 Décembre',
+        lat: 5.2980,
+        lng: -3.9550,
+        isLive: false,
+        specialty: 'Banane Braisée & Arachides Grillées',
+        dishKey: 'banane-braisee',
+        tags: ['banane-braisee', 'banane braisee', 'koyo', 'arachides'],
+        price: '300 – 800 FCFA',
+        hours: '15h00 – 21h00',
+        distance: '1.4 km',
+        desc: 'Plantains mûrs braisés à la cendre chaude et arachides croquantes grillées au sable fin.',
+        image: 'assets/images/Banane braisée.jfif'
+      },
+      {
+        id: 'v9',
+        name: 'L’APF Royale de Maman Rose',
+        commune: 'Cocody',
+        quarter: 'Riviera Palmeraie',
+        lat: 5.3620,
+        lng: -3.9520,
+        isLive: true,
+        specialty: 'Attiéké Gros Poisson Frit (APF)',
+        dishKey: 'apf',
+        tags: ['apf', 'attieke poisson frit', 'dorade', 'carpe', 'poisson'],
+        price: '1 500 – 3 500 FCFA',
+        hours: '12h00 – 22h30',
+        distance: '530 m',
+        desc: 'Attiéké moelleux avec une dorade croustillante assaisonnée au piment noir et condiments frais.',
+        image: 'assets/images/APF.jfif'
+      },
+      {
+        id: 'v10',
+        name: 'Le Coin du Placali & Kopè Frais',
+        commune: 'Yopougon',
+        quarter: 'Sideci Terminus 40',
+        lat: 5.3510,
+        lng: -4.0815,
+        isLive: true,
+        specialty: 'Placali Glissant Sauce Kpasso',
+        dishKey: 'placali',
+        tags: ['placali', 'kpasso', 'kope', 'gombo', 'manioc'],
+        price: '1 000 – 2 500 FCFA',
+        hours: '10h00 – 16h30',
+        distance: '390 m',
+        desc: 'Placali préparé à la pâte de manioc pure, sauce gombo gluant kpasso avec morceaux de poisson fumé.',
+        image: 'assets/images/Placali.jfif'
+      },
+      {
+        id: 'v11',
+        name: 'Wintchin & Haricot Braisé d’Affou',
+        commune: 'Treichville',
+        quarter: 'Gare de Bassam',
+        lat: 5.3020,
+        lng: -4.0025,
+        isLive: true,
+        specialty: 'Wintchin Riz Sauté & Haricot Poroto',
+        dishKey: 'wintchin',
+        tags: ['wintchin', 'riz', 'riz saute', 'haricot', 'poroto'],
+        price: '400 – 1 200 FCFA',
+        hours: '11h00 – 21h00',
+        distance: '480 m',
+        desc: 'Riz gras et sauté street-food avec haricots rouges mijotés et sauce tomate épicée.',
+        image: 'assets/images/wintchin.jfif'
+      },
+      {
+        id: 'v12',
+        name: 'Grotto & Chips Glacés de Babi',
+        commune: 'Marcory',
+        quarter: 'Zone 4 Bvd de Marseille',
+        lat: 5.2950,
+        lng: -3.9740,
+        isLive: true,
+        specialty: 'Yaourt Grotto & Chips Plantain',
+        dishKey: 'yaourt-grotto',
+        tags: ['yaourt-grotto', 'grotto', 'chips-plantain', 'chips plantain', 'gouter'],
+        price: '200 – 600 FCFA',
+        hours: '11h00 – 22h00',
+        distance: '720 m',
+        desc: 'Yaourt onctueux artisanal glacé au bâtonnet et sachets de chips de plantain craquantes.',
+        image: 'assets/images/Du bon yaourt grotto.jfif'
+      }
+    ];
+
+    // -------------------------------------------------------------
+    // 3. INITIALISATION DE LA CARTE LEAFLET DARK MODE & FILTRAGE STRICT
+    // -------------------------------------------------------------
+    let map;
+    let markers = [];
+    let showLiveOnly = true;
+    let currentSearchQuery = '';
+    let currentCommuneFilter = 'all';
+
+    function initMap() {
+      map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([5.3400, -4.0200], 12);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      renderMarkers();
+      renderVendorSidebarList();
+    }
+
+    // Affiche UNIQUEMENT les étals correspondant à la recherche
+    // Fonction de filtrage STRICT et bidirectionnel (aucun élément étranger)
+    function vendorMatchesQuery(v, term, commune) {
+      if (showLiveOnly && !v.isLive) return false;
+      if (commune && commune !== 'all' && v.commune.toLowerCase() !== commune.toLowerCase()) return false;
+      if (!term) return true;
+
+      const cleanTerm = term.toLowerCase().trim();
+      const searchableText = `${v.name} ${v.specialty} ${v.commune} ${v.quarter} ${v.desc} ${v.dishKey || ''} ${(v.tags || []).join(' ')}`.toLowerCase();
+
+      // Vérification directe
+      if (searchableText.includes(cleanTerm)) return true;
+      if (v.dishKey && cleanTerm.includes(v.dishKey.toLowerCase())) return true;
+
+      // Découpage en mots signifiants (ex: "Le Garba National" -> ["garba", "national"])
+      const tokens = cleanTerm.split(/[\s'’\-]+/).filter(w => w.length >= 3 && !['les', 'des', 'aux', 'pour', 'avec', 'une', 'par', 'est', 'sur'].includes(w));
+      if (tokens.length > 0) {
+        return tokens.some(t => searchableText.includes(t));
+      }
+
+      return false;
+    }
+
+    function renderMarkers(filterTerm = currentSearchQuery, communeTerm = currentCommuneFilter) {
+      // 1. Nettoyer tous les anciens marqueurs de la carte
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      const term = (filterTerm || '').trim();
+      const commune = (communeTerm || 'all').trim();
+
+      // 2. Filtrer STRICTEMENT les étals (élimination absolue des éléments étrangers)
+      const filtered = VENDORS_DATABASE.filter(v => vendorMatchesQuery(v, term, commune));
+
+      // 3. Ajouter UNIQUEMENT les marqueurs correspondants
+      filtered.forEach(vendor => {
+        const iconHtml = `
+          <div class="relative cursor-pointer group" onclick="openVendorModalById('${vendor.id}')">
+            ${vendor.isLive ? '<div class="sonar-ring w-12 h-12 -top-1 -left-1"></div>' : ''}
+            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 ${vendor.isLive ? 'bg-brand-orange border-white hover:scale-110' : 'bg-stone-700 border-stone-500'
+          } transition-transform">
+              <span class="text-sm">🍗</span>
+            </div>
+            ${vendor.isLive
+            ? '<span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-stone-900 rounded-full animate-pulse-dot"></span>'
+            : '<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-stone-900 rounded-full"></span>'
+          }
+          </div>
+        `;
+
+        const customIcon = L.divIcon({
+          className: 'custom-map-pin',
+          html: iconHtml,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
+        });
+
+        const marker = L.marker([vendor.lat, vendor.lng], { icon: customIcon }).addTo(map);
+
+        marker.bindPopup(`
+          <div class="p-1 text-xs">
+            <p class="font-bold text-white text-sm">${vendor.name}</p>
+            <p class="text-brand-orange text-[11px] font-semibold">${vendor.specialty}</p>
+            <div class="flex items-center justify-between mt-2 pt-1 border-t border-stone-700">
+              <span class="text-[10px] ${vendor.isLive ? 'text-emerald-400 font-bold' : 'text-stone-400'}">
+                ${vendor.isLive ? '🟢 EN SERVICE' : '🔴 FERMÉ'}
+              </span>
+              <button onclick="openVendorModalById('${vendor.id}')" class="text-brand-orange font-bold text-[10px] hover:underline">
+                Voir fiche & GPS &rarr;
+              </button>
+            </div>
+          </div>
+        `);
+
+        markers.push(marker);
+      });
+
+      // 4. Mettre à jour la bannière d'information sur la carte
+      updateMapActiveFilterBanner(term, commune, filtered.length);
+
+      // 5. Ajuster la vue de la carte UNIQUEMENT sur les étals trouvés
+      if (filtered.length > 0 && (term || commune !== 'all')) {
+        if (filtered.length === 1) {
+          map.flyTo([filtered[0].lat, filtered[0].lng], 15, { duration: 1.2 });
+        } else {
+          const group = L.featureGroup(markers);
+          map.fitBounds(group.getBounds(), { padding: [45, 45], maxZoom: 15 });
+        }
+      }
+    }
+
+    function updateMapActiveFilterBanner(term, commune, count) {
+      const banner = document.getElementById('mapFilterActiveNotice');
+      const text = document.getElementById('mapFilterNoticeText');
+      if (!banner || !text) return;
+
+      if (term || commune !== 'all') {
+        const label = term ? `« ${term} »` : commune;
+        if (count > 0) {
+          text.innerHTML = `Filtre actif : <strong>${label}</strong> (${count} étal${count > 1 ? 's' : ''} trouvé${count > 1 ? 's' : ''})`;
+          banner.className = "absolute top-4 right-4 z-20 bg-brand-orange text-white px-3.5 py-1.5 rounded-2xl text-xs font-black shadow-2xl flex items-center gap-2 border border-white/20";
+        } else {
+          text.innerHTML = `Aucun étal trouvé pour <strong>${label}</strong>`;
+          banner.className = "absolute top-4 right-4 z-20 bg-stone-800 text-stone-200 px-3.5 py-1.5 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2 border border-stone-600";
+        }
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function renderVendorSidebarList(filterTerm = currentSearchQuery, communeTerm = currentCommuneFilter) {
+      const listContainer = document.getElementById('vendorSpotsList');
+      const badgeCount = document.getElementById('spotsCountBadge');
+
+      const term = (filterTerm || '').trim();
+      const commune = (communeTerm || 'all').trim();
+
+      const filtered = VENDORS_DATABASE.filter(v => vendorMatchesQuery(v, term, commune));
+
+      badgeCount.textContent = `${filtered.length} étal${filtered.length > 1 ? 's' : ''}`;
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div class="p-6 text-center text-stone-500">
+            <p class="text-xs">Aucun étal trouvé pour ce critère en ce moment.</p>
+            <button onclick="clearSearchInput()" class="mt-2 text-xs text-brand-orange font-bold hover:underline">
+              Réinitialiser et voir tous les étals
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(v => `
+        <div onclick="openVendorModalById('${v.id}')" class="p-3 sm:p-3.5 rounded-2xl bg-stone-950/70 border border-stone-800/80 hover:border-brand-orange/60 transition-all cursor-pointer group">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 rounded-xl bg-stone-800 overflow-hidden shrink-0 border border-stone-700/60">
+              <img src="${v.image}" alt="${v.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 truncate">${v.commune} &bull; ${v.quarter}</span>
+                <span class="text-[10px] font-black shrink-0 ${v.isLive ? 'text-emerald-400' : 'text-stone-500'}">
+                  ${v.isLive ? '🟢 EN SERVICE' : '🔴 FERMÉ'}
+                </span>
+              </div>
+              <h4 class="font-bold text-xs text-white truncate mt-0.5">${v.name}</h4>
+              <p class="text-[11px] text-brand-orange truncate font-medium">${v.specialty}</p>
+              
+              <div class="mt-2 pt-2 border-t border-stone-800/60 flex items-center justify-between text-[10px] text-stone-400">
+                <span>${v.price}</span>
+                <span class="font-semibold text-stone-300 flex items-center gap-1 group-hover:text-brand-orange transition-colors">
+                  <i data-lucide="navigation" class="w-3 h-3 text-brand-orange"></i> ${v.distance} &bull; GPS
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    // -------------------------------------------------------------
+    // ANIMATION : VISITE VIRTUELLE AUTOMATIQUE DES ÉTALS D'ABIDJAN
+    // -------------------------------------------------------------
+    let tourIndex = 0;
+
+    function startInteractiveMapTour() {
+      const activeStalls = VENDORS_DATABASE.filter(v => v.isLive);
+      if (activeStalls.length === 0) return;
+
+      document.getElementById('carte').scrollIntoView({ behavior: 'smooth' });
+
+      const target = activeStalls[tourIndex % activeStalls.length];
+      map.flyTo([target.lat, target.lng], 15, {
+        duration: 1.8,
+        easeLinearity: 0.25
+      });
+
+      setTimeout(() => {
+        const marker = markers.find(m => {
+          const pos = m.getLatLng();
+          return Math.abs(pos.lat - target.lat) < 0.001 && Math.abs(pos.lng - target.lng) < 0.001;
+        });
+        if (marker) marker.openPopup();
+      }, 1900);
+
+      tourIndex++;
+    }
+
+    function toggleLiveOnlyFilter() {
+      showLiveOnly = !showLiveOnly;
+      const btn = document.getElementById('filterLiveOnlyBtn');
+      if (showLiveOnly) {
+        btn.className = "px-3.5 py-2 rounded-full text-xs font-bold border border-emerald-500 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5";
+        btn.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot"></span><span>En service uniquement</span>`;
+      } else {
+        btn.className = "px-3.5 py-2 rounded-full text-xs font-bold border border-stone-600 bg-stone-800 text-stone-300 hover:bg-stone-700 transition-all flex items-center gap-1.5";
+        btn.innerHTML = `<span>Tous les étals</span>`;
+      }
+      renderMarkers();
+      renderVendorSidebarList();
+    }
+
+    function resetMapCenter() {
+      currentSearchQuery = '';
+      currentCommuneFilter = 'all';
+      if (searchInput) searchInput.value = '';
+      if (document.getElementById('communeSelect')) document.getElementById('communeSelect').value = 'all';
+      renderMarkers();
+      renderVendorSidebarList();
+      map.flyTo([5.3400, -4.0200], 12);
+    }
+
+    function zoomToCommune(commune) {
+      document.getElementById('communeSelect').value = commune;
+      currentCommuneFilter = commune;
+      renderMarkers(currentSearchQuery, commune);
+      renderVendorSidebarList(currentSearchQuery, commune);
+
+      const coords = {
+        'Yopougon': [5.3411, -4.0722],
+        'Cocody': [5.3855, -3.9782],
+        'Marcory': [5.3015, -3.9892],
+        'Treichville': [5.3090, -4.0110],
+        'Plateau': [5.3245, -4.0195],
+        'Koumassi': [5.2980, -3.9550]
+      };
+      if (coords[commune]) {
+        map.flyTo(coords[commune], 14, { duration: 1.2 });
+        document.getElementById('carte').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 4. GESTION RECHERCHE & SYNCHRONISATION INSTANTANÉE CARTE + LISTE
+    // -------------------------------------------------------------
+    const searchInput = document.getElementById('searchInput');
+    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+    const autocompleteList = document.getElementById('autocompleteList');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+    function handleSearchFocus() {
+      // Sur mobile : scroll pour que la barre reste visible au-dessus du clavier virtuel
+      setTimeout(() => {
+        const searchBox = document.getElementById('searchSection');
+        if (!searchBox) return;
+
+        // Utilise visualViewport si disponible (détecte la fenêtre réduite par le clavier)
+        if (window.visualViewport) {
+          const vvTop = window.visualViewport.offsetTop;
+          const rect = searchBox.getBoundingClientRect();
+          const targetScroll = window.pageYOffset + rect.top - 70;
+          window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        } else {
+          const rect = searchBox.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          window.scrollTo({ top: scrollTop + rect.top - 75, behavior: 'smooth' });
+        }
+      }, 300);
+    }
+
+    // Recalage si le clavier mobile redimensionne le viewport
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        if (document.activeElement === searchInput) {
+          handleSearchFocus();
+        }
+      });
+    }
+
+    function scrollToSearchAndFocus() {
+      const searchBox = document.getElementById('searchSection');
+      if (searchBox) {
+        searchBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => {
+          searchInput.focus({ preventScroll: true });
+        }, 450);
+      }
+    }
+
+    let searchLiveDebounceTimer = null;
+
+    searchInput.addEventListener('input', function (e) {
+      const val = e.target.value.trim();
+      const lowerVal = val.toLowerCase();
+
+      if (val.length > 0) {
+        clearSearchBtn.classList.remove('hidden');
+      } else {
+        clearSearchBtn.classList.add('hidden');
+      }
+
+      // Actualisation en direct et instantanée de la carte (aucun élément étranger)
+      clearTimeout(searchLiveDebounceTimer);
+      searchLiveDebounceTimer = setTimeout(() => {
+        const commune = document.getElementById('communeSelect').value;
+        currentSearchQuery = val;
+        renderMarkers(val, commune);
+        renderVendorSidebarList(val, commune);
+      }, 120);
+
+      if (val.length < 2) {
+        autocompleteDropdown.classList.add('hidden');
+        if (val.length === 0) {
+          clearSearchInput();
+        }
+        return;
+      }
+
+      const matches = IVORIAN_CATALOG.filter(item => {
+        const inName = item.name.toLowerCase().includes(lowerVal);
+        const inDesc = item.desc.toLowerCase().includes(lowerVal);
+        const inKeys = item.keywords.some(k => k.includes(lowerVal));
+        return inName || inDesc || inKeys;
+      });
+
+      if (matches.length > 0) {
+        autocompleteList.innerHTML = matches.map(item => `
+          <div onclick="selectDishAutocomplete('${item.name}')" class="p-3 sm:p-3.5 hover:bg-brand-peachLight cursor-pointer flex items-center gap-3 transition-colors active:bg-brand-peach">
+            <div class="w-11 h-11 rounded-xl overflow-hidden bg-stone-100 shrink-0 border border-stone-200">
+              <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-xs text-brand-dark truncate">${item.name}</p>
+              <p class="text-[11px] text-stone-500 truncate">${item.desc}</p>
+            </div>
+            <span class="text-[10px] font-bold text-brand-orange bg-brand-peach px-2 py-0.5 rounded-full shrink-0">
+              ${item.price}
+            </span>
+          </div>
+        `).join('');
+        autocompleteDropdown.classList.remove('hidden');
+      } else {
+        autocompleteList.innerHTML = `
+          <div class="p-4 text-center text-xs text-stone-500">
+            Aucun plat trouvé pour "${val}". Essayez Garba, Alloco, Choukouya, Gnonmi, Pain Chien...
+          </div>
+        `;
+        autocompleteDropdown.classList.remove('hidden');
+      }
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        autocompleteDropdown.classList.add('hidden');
+        triggerSearch();
+      }
+    });
+
+    function clearSearchInput() {
+      searchInput.value = '';
+      clearSearchBtn.classList.add('hidden');
+      autocompleteDropdown.classList.add('hidden');
+      currentSearchQuery = '';
+      const commune = document.getElementById('communeSelect').value;
+      renderMarkers('', commune);
+      renderVendorSidebarList('', commune);
+    }
+
+    function closeAutocomplete() {
+      autocompleteDropdown.classList.add('hidden');
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!searchInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+        autocompleteDropdown.classList.add('hidden');
+      }
+    });
+
+    function selectDishAutocomplete(dishName) {
+      searchInput.value = dishName;
+      autocompleteDropdown.classList.add('hidden');
+      triggerSearch(dishName);
+    }
+
+    function setSearchValue(val) {
+      searchInput.value = val;
+      if (val && val.length > 0) {
+        clearSearchBtn.classList.remove('hidden');
+      } else {
+        clearSearchBtn.classList.add('hidden');
+      }
+      autocompleteDropdown.classList.add('hidden');
+      triggerSearch(val);
+    }
+
+    // Déclenche la recherche et synchronise la CARTE avec UNIQUEMENT les étals cherchés
+    function triggerSearch(customQuery = null) {
+      const query = customQuery !== null ? customQuery : searchInput.value.trim();
+      const commune = document.getElementById('communeSelect').value;
+
+      currentSearchQuery = query;
+      currentCommuneFilter = commune;
+
+      // 1. Met à jour la carte pour n'afficher que ce qui est recherché
+      renderMarkers(query, commune);
+
+      // 2. Met à jour la liste latérale
+      renderVendorSidebarList(query, commune);
+
+      // 3. Descend doucement vers la carte pour voir les résultats
+      document.getElementById('carte').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // -------------------------------------------------------------
+    // 5. SESSION CHEF YASSOI — LA ROUE GOURMANDE PAR BUDGET
+    // -------------------------------------------------------------
+    let yassoiCurrentBudget = 1000;
+    let yassoiEligibleDishes = [];
+    let yassoiIsSpinning = false;
+    let yassoiCurrentRotation = 0;
+    let yassoiWinnerDish = null;
+
+    const YASSOI_DISH_POOL = [
+      { name: 'Le Garba National', minPrice: 500, maxPrice: 1500, img: 'assets/images/GARBA.jfif', dishKey: 'garba', quote: '« Mon petit, le thon frit croustillant avec piment rouge bien dosé. Ça ne rate jamais ! »' },
+      { name: 'L’Alloco & Piment', minPrice: 300, maxPrice: 1000, img: 'assets/images/ALLOCO.jfif', dishKey: 'alloco', quote: '« Des dés de plantain bien dorés avec œuf dur. Simple, efficace et calant ! »' },
+      { name: 'Le Choukouya d’Agneau', minPrice: 2000, maxPrice: 5000, img: 'assets/images/choukouya.jfif', dishKey: 'choukouya', quote: '« Viande tendre étouffée au charbon et kankankan ardent. Tu as le budget, régale-toi ! »' },
+      { name: 'Le Pain Chien Chaud', minPrice: 300, maxPrice: 800, img: 'assets/images/Pain chien_.jfif', dishKey: 'pain-chien', quote: '« Pain croustillant, saucisse chaude et sauce piquante au bord du goudron. Un classique ! »' },
+      { name: 'Pain Condiment (Penavona)', minPrice: 500, maxPrice: 1200, img: 'assets/images/pain avec condiment .jfif', dishKey: 'pain-condiment', quote: '« Spaghetti, sardines et œufs frits dans une demi-baguette. Le repas des vaillants ! »' },
+      { name: 'Gnonmi & Baka', minPrice: 100, maxPrice: 500, img: 'assets/images/Gnonmi.jfif', dishKey: 'gnonmi', quote: '« Beignets de mil tout chauds trempés dans le baka sucré. Douceur garantie ! »' },
+      { name: 'Banane Braisée (Koyo)', minPrice: 300, maxPrice: 1000, img: 'assets/images/Banane braisée.jfif', dishKey: 'banane-braisee', quote: '« Plantain mûr sur la braise avec arachides grillées fraîches. Le vrai goûter ivoirien ! »' },
+      { name: 'L’APF Dorade Royale', minPrice: 1500, maxPrice: 3500, img: 'assets/images/APF.jfif', dishKey: 'apf', quote: '« Grosse dorade frite bien assaisonnée avec attiéké frais. Tu es le boss aujourd’hui ! »' },
+      { name: 'Foutou Banane Sauce Graine', minPrice: 1500, maxPrice: 3000, img: 'assets/images/foutou.jfif', dishKey: 'foutou', quote: '« Foutou pilé minute avec sauce graine fumée. Repas lourd de midi, après ça tu dors ! »' },
+      { name: 'Placali Sauce Kpasso', minPrice: 1000, maxPrice: 2500, img: 'assets/images/Placali.jfif', dishKey: 'placali', quote: '« Le placali bien glissant sauce gombo kpasso. Les vrais connaisseurs savent ! »' },
+      { name: 'Wintchin Riz Sauté', minPrice: 500, maxPrice: 1500, img: 'assets/images/wintchin.jfif', dishKey: 'wintchin', quote: '« Riz gras sauté tomate de rue avec petits légumes. Très copieux ! »' },
+      { name: 'Fruits Frais & Coco Râpé', minPrice: 200, maxPrice: 1000, img: 'assets/images/Du Coco râpé grillé.jfif', dishKey: 'fruits-frais', quote: '« Vitamines pures d’Abidjan : ananas Bonoua, pastèque glacée et coco grillé ! »' }
+    ];
+
+    const YASSOI_COLORS = ['#E8590C', '#FEF3C7', '#16A34A', '#FEEFE7', '#D97706', '#FCE7ED', '#2563EB', '#F59E0B'];
+    const YASSOI_TEXT_COLORS = ['#FFFFFF', '#78350F', '#FFFFFF', '#9A3412', '#FFFFFF', '#831843', '#FFFFFF', '#78350F'];
+
+    function initYassoiWheel() {
+      updateYassoiCandidates();
+      drawYassoiWheel(yassoiCurrentRotation);
+    }
+
+    function updateYassoiCandidates() {
+      yassoiEligibleDishes = YASSOI_DISH_POOL.filter(d => d.minPrice <= yassoiCurrentBudget);
+      if (yassoiEligibleDishes.length < 3) {
+        yassoiEligibleDishes = YASSOI_DISH_POOL.slice(0, 4);
+      }
+
+      const tagsContainer = document.getElementById('yassoiCandidateTags');
+      if (tagsContainer) {
+        tagsContainer.innerHTML = yassoiEligibleDishes.map(d => `
+          <span class="px-2.5 py-1 rounded-full bg-white border border-stone-200 shadow-xs">
+            ${d.name} (${d.minPrice}F)
+          </span>
+        `).join('');
+      }
+
+      drawYassoiWheel(yassoiCurrentRotation);
+    }
+
+    function setYassoiBudget(amount, btnElement = null) {
+      yassoiCurrentBudget = amount;
+      document.getElementById('displayBudgetVal').textContent = `${amount.toLocaleString('fr-FR')} FCFA`;
+      document.getElementById('yassoiBudgetSlider').value = amount;
+
+      document.querySelectorAll('.yassoi-budget-btn').forEach(b => {
+        const isMatch = b.getAttribute('data-budget') == amount || (btnElement && (b === btnElement || b.contains(btnElement)));
+        if (isMatch) {
+          b.classList.add('active', 'border-brand-orange', 'bg-brand-orange', 'text-white');
+          b.classList.remove('border-stone-200', 'bg-stone-50', 'text-stone-700');
+        } else {
+          b.classList.remove('active', 'border-brand-orange', 'bg-brand-orange', 'text-white');
+          b.classList.add('border-stone-200', 'bg-stone-50', 'text-stone-700');
+        }
+      });
+
+      updateYassoiCandidates();
+    }
+
+    function onYassoiSliderChange(val) {
+      yassoiCurrentBudget = parseInt(val, 10);
+      document.getElementById('displayBudgetVal').textContent = `${yassoiCurrentBudget.toLocaleString('fr-FR')} FCFA`;
+
+      document.querySelectorAll('.yassoi-budget-btn').forEach(b => {
+        if (b.getAttribute('data-budget') == yassoiCurrentBudget) {
+          b.classList.add('active', 'border-brand-orange', 'bg-brand-orange', 'text-white');
+          b.classList.remove('border-stone-200', 'bg-stone-50', 'text-stone-700');
+        } else {
+          b.classList.remove('active', 'border-brand-orange', 'bg-brand-orange', 'text-white');
+          b.classList.add('border-stone-200', 'bg-stone-50', 'text-stone-700');
+        }
+      });
+
+      updateYassoiCandidates();
+    }
+
+    function drawYassoiWheel(currentAngle) {
+      const canvas = document.getElementById('yassoiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const radius = width / 2;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const numSlices = yassoiEligibleDishes.length;
+      const sliceAngle = (2 * Math.PI) / numSlices;
+
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate(currentAngle);
+
+      for (let i = 0; i < numSlices; i++) {
+        const dish = yassoiEligibleDishes[i];
+        const startAngle = i * sliceAngle;
+        const endAngle = startAngle + sliceAngle;
+
+        // Tranche colorée
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius - 6, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = YASSOI_COLORS[i % YASSOI_COLORS.length];
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+
+        // Texte du plat sur la tranche
+        ctx.save();
+        ctx.rotate(startAngle + sliceAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = YASSOI_TEXT_COLORS[i % YASSOI_TEXT_COLORS.length];
+        ctx.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+        ctx.shadowBlur = 4;
+
+        // Texte tronqué si trop long
+        let text = dish.name;
+        if (text.length > 18) text = text.substring(0, 16) + '...';
+        ctx.fillText(text, radius - 30, 6);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function spinChefYassoiWheel() {
+      if (yassoiIsSpinning) return;
+      if (yassoiEligibleDishes.length === 0) return;
+
+      yassoiIsSpinning = true;
+      document.getElementById('spinWheelBtn').disabled = true;
+      document.getElementById('yassoiWinnerCard').classList.add('hidden');
+
+      // Nombre de tours aléatoires (5 à 9 tours) + angle aléatoire
+      const extraSpins = (5 + Math.floor(Math.random() * 4)) * 360;
+      const randomOffset = Math.floor(Math.random() * 360);
+      const totalRotationDegrees = extraSpins + randomOffset;
+      const totalRotationRadians = (totalRotationDegrees * Math.PI) / 180;
+
+      const duration = 3800; // 3.8 secondes
+      const startTime = performance.now();
+      const startAngle = yassoiCurrentRotation;
+
+      function animate(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Ease Out Quart pour un ralentissement très réaliste
+        const easeOut = 1 - Math.pow(1 - progress, 4);
+
+        yassoiCurrentRotation = startAngle + (totalRotationRadians * easeOut);
+        drawYassoiWheel(yassoiCurrentRotation);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          yassoiIsSpinning = false;
+          document.getElementById('spinWheelBtn').disabled = false;
+          determineYassoiWinner();
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function determineYassoiWinner() {
+      const numSlices = yassoiEligibleDishes.length;
+      const sliceAngle = 360 / numSlices;
+
+      // Angle normalisé en degrés
+      const degrees = (yassoiCurrentRotation * 180 / Math.PI) % 360;
+      // La flèche est tout en haut à 270 degrés
+      const pointerAngle = (360 - degrees + 270) % 360;
+      const winningIndex = Math.floor(pointerAngle / sliceAngle) % numSlices;
+
+      yassoiWinnerDish = yassoiEligibleDishes[winningIndex];
+
+      // Afficher la carte du gagnant
+      document.getElementById('yassoiWinnerImg').src = yassoiWinnerDish.img;
+      document.getElementById('yassoiWinnerTitle').textContent = yassoiWinnerDish.name;
+      document.getElementById('yassoiWinnerQuote').textContent = yassoiWinnerDish.quote;
+      document.getElementById('yassoiWinnerPrice').textContent = `${yassoiWinnerDish.minPrice} – ${yassoiWinnerDish.maxPrice} FCFA`;
+
+      const card = document.getElementById('yassoiWinnerCard');
+      card.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    // Applique le verdict du Chef Yassoi directement sur la carte
+    function applyYassoiWinnerToMap() {
+      if (!yassoiWinnerDish) return;
+      const communeSelect = document.getElementById('communeSelect');
+      if (communeSelect) communeSelect.value = 'all';
+      currentCommuneFilter = 'all';
+
+      const targetQuery = yassoiWinnerDish.name;
+      searchInput.value = targetQuery;
+      clearSearchBtn.classList.remove('hidden');
+      triggerSearch(targetQuery);
+
+      // Ouvrir le premier marqueur correspondant sur la carte après le scroll
+      setTimeout(() => {
+        if (markers.length > 0) {
+          markers[0].openPopup();
+        }
+      }, 800);
+    }
+
+    // -------------------------------------------------------------
+    // 6. MODAL FICHE VENDEUR & ITINÉRAIRE GPS STRICT GOOGLE MAPS
+    // -------------------------------------------------------------
+    function openVendorModalById(vendorId) {
+      const vendor = VENDORS_DATABASE.find(v => v.id === vendorId);
+      if (!vendor) return;
+
+      document.getElementById('modalVendorImg').src = vendor.image;
+      document.getElementById('modalVendorName').textContent = vendor.name;
+      document.getElementById('modalVendorCommune').textContent = `${vendor.commune} — ${vendor.quarter}`;
+      document.getElementById('modalVendorSpecialty').textContent = vendor.specialty;
+      document.getElementById('modalVendorPrice').textContent = vendor.price;
+      document.getElementById('modalVendorDesc').textContent = vendor.desc;
+      document.getElementById('modalVendorHours').textContent = vendor.hours;
+      document.getElementById('modalVendorDistance').textContent = `~ ${vendor.distance}`;
+
+      const statusBadge = document.getElementById('modalStatusBadge');
+      if (vendor.isLive) {
+        statusBadge.innerHTML = `
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-white shadow-lg">
+            <span class="w-2 h-2 rounded-full bg-white animate-pulse-dot"></span>
+            EN SERVICE LIVE
+          </span>
+        `;
+      } else {
+        statusBadge.innerHTML = `
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-stone-700 text-stone-200 shadow-lg">
+            🔴 FERMÉ ACTUELLEMENT
+          </span>
+        `;
+      }
+
+      const gpsUrl = `https://www.google.com/maps/dir/?api=1&destination=${vendor.lat},${vendor.lng}`;
+      document.getElementById('modalGpsLink').href = gpsUrl;
+
+      document.getElementById('vendorModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeVendorModal() {
+      document.getElementById('vendorModal').classList.add('hidden');
+    }
+
+    function openDishModal(dishKey) {
+      // Trouver d'abord un vendeur avec exactement ce dishKey
+      const vendorExact = VENDORS_DATABASE.find(v => v.dishKey === dishKey);
+      if (vendorExact) {
+        openVendorModalById(vendorExact.id);
+        return;
+      }
+      // Sinon chercher un vendeur dont les tags contiennent le dishKey
+      const vendorByTag = VENDORS_DATABASE.find(v => v.tags && v.tags.includes(dishKey));
+      if (vendorByTag) {
+        openVendorModalById(vendorByTag.id);
+        return;
+      }
+      // En dernier recours : filtrer la carte et scroller
+      setSearchValue(dishKey);
+    }
+
+    // -------------------------------------------------------------
+    // 7. GESTION ESPACE VENDEUR TEMPS RÉEL
+    // -------------------------------------------------------------
+    let sellerIsLive = true;
+
+    function toggleVendorDrawer() {
+      const drawer = document.getElementById('vendorDrawer');
+      drawer.classList.toggle('hidden');
+      lucide.createIcons();
+    }
+
+    function handleVendorBackdropClick(event) {
+      if (event.target === document.getElementById('vendorDrawer')) {
+        toggleVendorDrawer();
+      }
+    }
+
+    // Touche Echap pour fermer les modales ouvertes
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const vendorDrawer = document.getElementById('vendorDrawer');
+        if (vendorDrawer && !vendorDrawer.classList.contains('hidden')) {
+          toggleVendorDrawer();
+        }
+        const adminModal = document.getElementById('adminModal');
+        if (adminModal && !adminModal.classList.contains('hidden')) {
+          closeAdminModal();
+        }
+      }
+    });
+
+    function toggleSellerServiceState() {
+      sellerIsLive = !sellerIsLive;
+      const btn = document.getElementById('vendorToggleStatusBtn');
+      const text = document.getElementById('vendorStatusText');
+
+      const v1 = VENDORS_DATABASE.find(v => v.id === 'v1');
+      if (v1) {
+        v1.isLive = sellerIsLive;
+      }
+
+      if (sellerIsLive) {
+        btn.className = "w-full py-4 px-6 rounded-2xl font-black text-base transition-all shadow-lg flex items-center justify-center gap-3 bg-emerald-600 text-white hover:bg-emerald-700";
+        text.textContent = "[ EN SERVICE ]";
+        btn.querySelector('.w-3\\.5').className = "w-3.5 h-3.5 rounded-full bg-white animate-pulse-dot";
+      } else {
+        btn.className = "w-full py-4 px-6 rounded-2xl font-black text-base transition-all shadow-lg flex items-center justify-center gap-3 bg-red-600 text-white hover:bg-red-700";
+        text.textContent = "[ FERMÉ ]";
+        btn.querySelector('.w-3\\.5').className = "w-3.5 h-3.5 rounded-full bg-white";
+      }
+
+      renderMarkers();
+      renderVendorSidebarList();
+    }
+
+    function updateSellerGpsLocation() {
+      const btnText = document.getElementById('gpsUpdateBtnText');
+      btnText.textContent = "Géolocalisation en cours...";
+
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude.toFixed(4);
+            const lng = position.coords.longitude.toFixed(4);
+            document.getElementById('gpsCoordText').textContent = `Coordonnées GPS captées : ${lat}° N, ${lng}° W`;
+            btnText.textContent = "Position GPS mise à jour ! ✅";
+            setTimeout(() => { btnText.textContent = "Actualiser ma position GPS"; }, 3000);
+          },
+          (error) => {
+            document.getElementById('gpsCoordText').textContent = `Position GPS captée : 5.3411° N, -4.0722° W (Simulé)`;
+            btnText.textContent = "Position actualisée ! ✅";
+            setTimeout(() => { btnText.textContent = "Actualiser ma position GPS"; }, 3000);
+          }
+        );
+      }
+    }
+
+    function saveSellerProfileChanges() {
+      const dish = document.getElementById('sellerDishInput').value;
+      const price = document.getElementById('sellerPriceInput').value;
+      const v1 = VENDORS_DATABASE.find(v => v.id === 'v1');
+      if (v1) {
+        v1.specialty = dish;
+        v1.price = price;
+        renderVendorSidebarList();
+        alert("Votre fiche a été mise à jour en direct sur MangeOù !");
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 8. MENU MOBILE ANIMÉ (Sheet flottant avec backdrop)
+    // -------------------------------------------------------------
+    let mobileMenuOpen = false;
+
+    function toggleMobileMenu(forceClose = false) {
+      const menu     = document.getElementById('mobileMenu');
+      const backdrop = document.getElementById('mobileMenuBackdrop');
+      const icon     = document.getElementById('burgerIcon');
+      if (!menu || !backdrop) return;
+
+      if (forceClose || mobileMenuOpen) {
+        /* ---- FERMETURE ---- */
+        mobileMenuOpen = false;
+        menu.classList.add('mobile-sheet-closing');
+        backdrop.style.opacity = '0';
+        backdrop.style.pointerEvents = 'none';
+        if (icon) { icon.setAttribute('data-lucide', 'menu'); lucide.createIcons(); }
+        setTimeout(() => {
+          menu.classList.add('hidden');
+          menu.classList.remove('mobile-sheet-open', 'mobile-sheet-closing');
+          backdrop.classList.add('hidden');
+          backdrop.style.opacity  = '';
+          backdrop.style.pointerEvents = '';
+        }, 240);
+
+      } else {
+        /* ---- OUVERTURE ---- */
+        mobileMenuOpen = true;
+
+        // 1. Affiche le backdrop
+        backdrop.classList.remove('hidden');
+        backdrop.style.opacity = '0';
+        backdrop.style.pointerEvents = '';
+        requestAnimationFrame(() => {
+          backdrop.style.transition = 'opacity 0.28s ease';
+          backdrop.style.opacity = '1';
+        });
+
+        // 2. Affiche le menu avec animation
+        menu.classList.remove('hidden', 'mobile-sheet-closing');
+        // Force un reflow pour relancer l'animation proprement
+        void menu.offsetWidth;
+        menu.classList.add('mobile-sheet-open');
+
+        // 3. Recréer les icônes Lucide dans le contenu du menu
+        lucide.createIcons();
+
+        // 4. Met l'icône burger en croix
+        if (icon) { icon.setAttribute('data-lucide', 'x'); lucide.createIcons(); }
+      }
+    }
+
+    function handlePartnerSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('partnerName').value;
+      const phone = document.getElementById('partnerPhone').value;
+      const commune = document.getElementById('partnerCommune').value;
+
+      alert(`Merci ${name} ! Votre demande pour la commune "${commune}" a été enregistrée. Notre régie vous contacte sur WhatsApp au ${phone} dans les 2 heures.`);
+      document.getElementById('partnerForm').reset();
+    }
+
+    // -------------------------------------------------------------
+    // 9. ROUTE MASQUÉE ADMIN (/backoffice-access-x99)
+    // -------------------------------------------------------------
+    function openSecretAdminPrompt() {
+      const pass = prompt("Accès Backoffice Sécurisé — Entrez la clé admin (ou tapez 'admin') :");
+      if (pass && pass.toLowerCase() === 'admin') {
+        // Rediriger vers la nouvelle page admin dédiée
+        window.location.href = 'admin.html';
+      } else if (pass !== null) {
+        alert("Accès refusé. Row Level Security bloqué.");
+      }
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    // -------------------------------------------------------------
+    // 10. FILTRES DU CATALOGUE
+    // -------------------------------------------------------------
+    function filterType(type) {
+      document.querySelectorAll('.category-pill').forEach(btn => {
+        btn.classList.remove('active', 'border-brand-orange', 'bg-brand-orange', 'text-white');
+        btn.classList.add('border-stone-200', 'bg-stone-50', 'text-stone-700');
+      });
+      event.target.classList.add('active', 'border-brand-orange', 'bg-brand-orange', 'text-white');
+
+      if (type === 'tous') {
+        triggerSearch('');
+      } else if (type === 'vendeuses') {
+        triggerSearch('beignets');
+      } else if (type === 'traditionnels') {
+        triggerSearch('foutou');
+      } else {
+        triggerSearch('garba');
+      }
+    }
+
+    function filterCatalog(term) {
+      setSearchValue(term);
+    }
+
+    function setActiveDockTab(element) {
+      document.querySelectorAll('.dock-tab').forEach(tab => {
+        tab.classList.remove('active-tab');
+      });
+      if (element) {
+        element.classList.add('active-tab');
+      }
+    }
+
+    function triggerDockFabFeedback() {
+      setActiveDockTab(null);
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+    }
+
+    // Initialisation générale
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      initYassoiWheel();
+      lucide.createIcons();
+
+      // Enregistrement PWA Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      }
+    });
+  </script>
+
+  <!-- ========================================================================= -->
+  <!-- BARRE DE NAVIGATION FLOTTANTE MOBILE INCURVÉE (Style Curved Notch Dock) -->
+  <!-- ========================================================================= -->
+  <aside aria-label="Navigation mobile principale"
+    class="md:hidden fixed bottom-2.5 left-2.5 right-2.5 z-40 h-[74px] select-none">
+    
+    <!-- Silhouette SVG Incurvée d'arrière-plan (fond noir doux avec échancrure centrale fluide) -->
+    <svg class="absolute inset-0 w-full h-full drop-shadow-[0_12px_28px_rgba(0,0,0,0.7)]" 
+         viewBox="0 0 380 72" fill="none" preserveAspectRatio="none">
+      <path d="M 0 32 
+               C 0 14, 14 0, 32 0 
+               L 136 0 
+               C 156 0, 160 42, 190 42 
+               C 220 42, 224 0, 244 0 
+               L 348 0 
+               C 366 0, 380 14, 380 32 
+               L 380 44 
+               C 380 60, 366 72, 348 72 
+               L 32 72 
+               C 14 72, 0 60, 0 44 Z" 
+            fill="#141210" 
+            stroke="rgba(255, 255, 255, 0.08)" 
+            stroke-width="1" />
+    </svg>
+
+    <!-- BOUTON CENTRAL FLOTTANT (FAB) SAILLANT DU CHEF YASSOI (Dans l'échancrure incurvée) -->
+    <div class="absolute left-1/2 -translate-x-1/2 -top-5 z-50 flex flex-col items-center pointer-events-auto">
+      <a href="#chef-yassoi" 
+         onclick="triggerDockFabFeedback()"
+         class="w-16 h-16 rounded-full bg-[#141210] p-1.5 shadow-[0_10px_25px_-3px_rgba(232,89,12,0.5),0_4px_12px_rgba(0,0,0,0.85)] border border-stone-800 flex items-center justify-center hover:scale-105 active:scale-90 transition-transform group"
+         aria-label="Chef Yassoi - Roue interactive par budget">
+        <!-- Disque vibrant intérieur (analogue au vert de la référence, ici en dégradé braise/or) -->
+        <div class="w-full h-full rounded-full bg-gradient-to-tr from-brand-orange via-orange-500 to-amber-400 flex items-center justify-center shadow-inner relative overflow-hidden fab-glow-pulse">
+          <span class="text-2xl spin-slow select-none filter drop-shadow-md">🎡</span>
+          <!-- Reflet brillant -->
+          <div class="absolute inset-0 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </div>
+      </a>
+      <span class="text-[9px] font-black uppercase tracking-wider text-amber-400 mt-0.5 filter drop-shadow">Yassoi</span>
+    </div>
+
+    <!-- GRILLE DES 4 ONGLETS (2 à gauche du creux, 2 à droite du creux) -->
+    <div class="relative z-10 w-full h-full flex items-center justify-between px-3 sm:px-6 pt-1 text-stone-400">
+      
+      <!-- GAUCHE 1 : RECHERCHE -->
+      <button onclick="scrollToSearchAndFocus(); setActiveDockTab(this)" 
+              class="dock-tab active-tab flex-1 flex flex-col items-center justify-center py-1 group">
+        <div class="relative">
+          <i data-lucide="search" class="w-5 h-5 text-brand-orange group-hover:scale-110 transition-transform"></i>
+        </div>
+        <span class="tab-title text-[10px] font-bold mt-0.5 text-stone-300 group-hover:text-white transition-colors">Recherche</span>
+        <span class="dock-indicator"></span>
+      </button>
+
+      <!-- GAUCHE 2 : VENDEUSES -->
+      <a href="#vendeuses" onclick="setActiveDockTab(this)" 
+         class="dock-tab flex-1 flex flex-col items-center justify-center py-1 group mr-7 sm:mr-9">
+        <div class="relative">
+          <i data-lucide="coffee" class="w-5 h-5 text-stone-400 group-hover:text-amber-400 group-hover:scale-110 transition-all"></i>
+        </div>
+        <span class="tab-title text-[10px] font-bold mt-0.5 text-stone-400 group-hover:text-stone-200 transition-colors">Vendeuses</span>
+        <span class="dock-indicator"></span>
+      </a>
+
+      <!-- ESPACE CENTRAL VIDE POUR LE CREUX ET LE BOUTON (W-16) -->
+      <div class="w-16 pointer-events-none shrink-0"></div>
+
+      <!-- DROITE 1 : CARTE LIVE -->
+      <a href="#carte" onclick="setActiveDockTab(this)" 
+         class="dock-tab flex-1 flex flex-col items-center justify-center py-1 group ml-7 sm:ml-9">
+        <div class="relative">
+          <i data-lucide="map-pin" class="w-5 h-5 text-stone-400 group-hover:text-emerald-400 group-hover:scale-110 transition-all"></i>
+          <span class="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot"></span>
+        </div>
+        <span class="tab-title text-[10px] font-bold mt-0.5 text-stone-400 group-hover:text-stone-200 transition-colors">Carte</span>
+        <span class="dock-indicator"></span>
+      </a>
+
+      <!-- DROITE 2 : MON ÉTAL (Espace Vendeur) -->
+      <button onclick="toggleVendorDrawer(); setActiveDockTab(this)" 
+              class="dock-tab flex-1 flex flex-col items-center justify-center py-1 group">
+        <div class="relative">
+          <i data-lucide="store" class="w-5 h-5 text-stone-400 group-hover:text-brand-orange group-hover:scale-110 transition-all"></i>
+        </div>
+        <span class="tab-title text-[10px] font-bold mt-0.5 text-stone-400 group-hover:text-stone-200 transition-colors">Mon Étal</span>
+        <span class="dock-indicator"></span>
+      </button>
+
+    </div>
+
+    <!-- Barre tactile inférieure blanche/grise (Home Indicator iOS/Android) -->
+    <div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-28 h-1 bg-stone-700/60 rounded-full pointer-events-none"></div>
+
+  </aside>
+
+</body>
+
+</html>

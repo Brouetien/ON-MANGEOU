@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yassoi On Mange Où ? — Backoffice Administration</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['Fraunces', 'serif'],
+          },
+          colors: {
+            brand: {
+              peach:      '#FEEFE7',
+              peachLight: '#FFF7F2',
+              peachDark:  '#FCD7C4',
+              orange:     '#E8590C',
+              orangeHover:'#CF4B05',
+              dark:       '#1C1917',
+              muted:      '#78716C',
+              pastelPink: '#FCE7ED',
+              pastelGreen:'#E2F7E5',
+              pastelYellow:'#FEF3C7',
+              statusGreen:'#16A34A',
+              statusRed:  '#DC2626',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FAF7F5; }
+
+    /* Navigation item active & selection */
+    .nav-item {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-item:hover:not(.active) {
+      background-color: #FEEFE7;
+      color: #E8590C;
+      transform: translateX(3px);
+    }
+    .nav-item.active {
+      background: linear-gradient(135deg, #E8590C 0%, #CF4B05 100%);
+      color: #FFFFFF !important;
+      box-shadow: 0 8px 20px -4px rgba(232, 89, 12, 0.35);
+    }
+    .nav-item.active i, .nav-item.active svg {
+      color: #FFFFFF !important;
+    }
+
+    /* Stat card dynamic orange selection */
+    .stat-card {
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      background-color: #FFFFFF;
+      border: 1px solid rgba(252, 215, 196, 0.7);
+      color: #1C1917;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card:hover:not(.selected-stat) {
+      transform: translateY(-3px);
+      border-color: #E8590C;
+      box-shadow: 0 14px 28px -6px rgba(232, 89, 12, 0.15);
+    }
+    .stat-card .stat-label {
+      color: #78716C;
+      transition: color 0.25s ease;
+    }
+    .stat-card .stat-value {
+      color: #1C1917;
+      transition: color 0.25s ease;
+    }
+    .stat-card .stat-icon-wrap {
+      transition: all 0.25s ease;
+    }
+    .stat-card .stat-badge {
+      transition: all 0.25s ease;
+    }
+    .stat-card .stat-glow {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    /* QUAND LA CARTE EST SÉLECTIONNÉE : L'ORANGE SE DÉPLACE DESSUS ! */
+    .stat-card.selected-stat {
+      background: linear-gradient(135deg, #E8590C 0%, #D94F08 50%, #C2410C 100%) !important;
+      color: #FFFFFF !important;
+      border-color: #E8590C !important;
+      box-shadow: 0 18px 38px -6px rgba(232, 89, 12, 0.42), 0 0 0 2px rgba(232, 89, 12, 0.25) !important;
+      transform: translateY(-4px) scale(1.02);
+    }
+    .stat-card.selected-stat .stat-label {
+      color: rgba(255, 255, 255, 0.9) !important;
+    }
+    .stat-card.selected-stat .stat-value {
+      color: #FFFFFF !important;
+    }
+    .stat-card.selected-stat .stat-icon-wrap {
+      background-color: rgba(255, 255, 255, 0.22) !important;
+      border-color: rgba(255, 255, 255, 0.35) !important;
+      color: #FFFFFF !important;
+    }
+    .stat-card.selected-stat .stat-icon-wrap i,
+    .stat-card.selected-stat .stat-icon-wrap svg {
+      color: #FFFFFF !important;
+      stroke: #FFFFFF !important;
+    }
+    .stat-card.selected-stat .stat-badge {
+      background-color: rgba(255, 255, 255, 0.22) !important;
+      color: #FFFFFF !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+    .stat-card.selected-stat .stat-badge span.pulse-dot {
+      background-color: #FFFFFF !important;
+    }
+    .stat-card.selected-stat .stat-note {
+      color: rgba(255, 255, 255, 0.8) !important;
+    }
+    .stat-card.selected-stat .stat-glow {
+      opacity: 1 !important;
+    }
+
+    /* Table row selection */
+    .table-row-selectable {
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
+    .table-row-selectable:hover {
+      background-color: #FFF7F2 !important;
+    }
+    .table-row-selectable.selected-row {
+      background-color: #FEEFE7 !important;
+      border-left: 4px solid #E8590C !important;
+      box-shadow: inset 0 0 0 1px rgba(232, 89, 12, 0.2);
+    }
+
+    /* Interactive item cards (Vendeuses & Plats) */
+    .selectable-card {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+    .selectable-card:hover {
+      border-color: #FCD7C4;
+      transform: translateY(-2px);
+    }
+    .selectable-card.selected-item {
+      border-color: #E8590C !important;
+      background-color: #FFF7F2 !important;
+      box-shadow: 0 10px 24px -4px rgba(232, 89, 12, 0.18) !important;
+      outline: 2px solid #E8590C;
+      outline-offset: 1px;
+    }
+
+    /* Badges */
+    .badge-open {
+      background-color: #E2F7E5;
+      color: #15803D;
+      border: 1px solid rgba(22, 163, 74, 0.2);
+    }
+    .badge-closed {
+      background-color: #FEE2E2;
+      color: #DC2626;
+      border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+    .badge-busy {
+      background-color: #FEF3C7;
+      color: #B45309;
+      border: 1px solid rgba(217, 119, 6, 0.2);
+    }
+
+    /* Filter pill active */
+    .filter-pill {
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
+    .filter-pill:hover:not(.active) {
+      border-color: #E8590C !important;
+      color: #E8590C !important;
+    }
+    .filter-pill.active,
+    .filter-pill.active:hover,
+    .filter-pill.active:focus {
+      background-color: #E8590C !important;
+      color: #FFFFFF !important;
+      border-color: #E8590C !important;
+      box-shadow: 0 4px 12px rgba(232, 89, 12, 0.25) !important;
+    }
+
+    /* Period buttons in chart */
+    .period-btn {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      color: #57534E !important;
+      background-color: transparent;
+      border: none;
+      outline: none;
+      cursor: pointer;
+    }
+    .period-btn:hover:not(.active) {
+      color: #E8590C !important;
+    }
+    .period-btn.active,
+    .period-btn.active:hover,
+    .period-btn.active:focus {
+      background-color: #E8590C !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(232, 89, 12, 0.25) !important;
+    }
+
+    /* Progress bars */
+    .progress-bar {
+      height: 7px;
+      border-radius: 9999px;
+      background-color: #F2EBE5;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Pulse animation */
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+    .live-dot {
+      animation: livePulse 1.6s ease-in-out infinite;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #FAF7F5; }
+    ::-webkit-scrollbar-thumb { background: #FCD7C4; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: #E8590C; }
+
+    /* Sidebar drawer transition */
+    #sidebar {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (max-width: 1023px) {
+      #sidebar.closed { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+
+<body class="text-stone-800 min-h-screen flex selection:bg-brand-orange selection:text-white">
+
+  <!-- ============================================================ -->
+  <!-- SIDEBAR GAUCHE OFFICIELLE YASSOI                             -->
+  <!-- ============================================================ -->
+  <aside id="sidebar" class="fixed lg:relative inset-y-0 left-0 z-30 w-64 bg-white border-r border-brand-peachDark/50 flex flex-col shadow-xl lg:shadow-none">
+
+    <!-- Logo & Marque officielle -->
+    <div class="p-5 pb-4 border-b border-brand-peachDark/40 bg-brand-peachLight/40">
+      <a href="index.html" class="flex items-center gap-3 group" title="Retour au site public">
+        <img src="assets/images/logo-yassoi-horizontal.svg" alt="Yassoi On Mange Où ?" class="h-9 w-auto group-hover:scale-105 transition-transform" />
+      </a>
+      <div class="mt-2.5 flex items-center justify-between">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-orange/10 text-brand-orange border border-brand-orange/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-orange animate-pulse"></span>
+          Backoffice Pro
+        </span>
+        <span class="text-[10px] font-bold text-stone-500">v2.4 Live</span>
+      </div>
+    </div>
+
+    <!-- Navigation Principale avec sélection active -->
+    <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto" aria-label="Menu administration">
+      <p class="px-3 text-[10px] font-black text-stone-600 uppercase tracking-widest mb-2">Supervision</p>
+
+      <button onclick="showSection('dashboard')" id="nav-dashboard"
+        class="nav-item active w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-left">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0 text-brand-orange"></i>
+        <span>Tableau de Bord</span>
+      </button>
+
+      <button onclick="showSection('etals')" id="nav-etals"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600 text-left">
+        <i data-lucide="store" class="w-4 h-4 shrink-0"></i>
+        <span>Gestion des Étals</span>
+        <span class="ml-auto bg-brand-orange text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">158</span>
+      </button>
+
+      <button onclick="showSection('vendeuses')" id="nav-vendeuses"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600 text-left">
+        <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
+        <span>Vendeuses de Rue</span>
+        <span class="ml-auto bg-brand-peach text-brand-orange text-[9px] font-black px-1.5 py-0.5 rounded-full border border-brand-peachDark">Actives</span>
+      </button>
+
+      <button onclick="showSection('commandes')" id="nav-commandes"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600 text-left">
+        <i data-lucide="navigation" class="w-4 h-4 shrink-0"></i>
+        <span>Itinéraires GPS</span>
+        <span class="ml-auto bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.5 rounded-full">342</span>
+      </button>
+
+      <button onclick="showSection('analytics')" id="nav-analytics"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600 text-left">
+        <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0"></i>
+        <span>Analytiques Abidjan</span>
+      </button>
+
+      <button onclick="showSection('partenariats')" id="nav-partenariats"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600 text-left">
+        <i data-lucide="sparkles" class="w-4 h-4 shrink-0 text-amber-500"></i>
+        <span>Pubs & Partenariats</span>
+        <span class="ml-auto bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded-full">7</span>
+      </button>
+
+      <div class="pt-4 border-t border-brand-peachDark/30 mt-3">
+        <p class="px-3 text-[10px] font-black text-stone-600 uppercase tracking-widest mb-2">Paramètres & Accès</p>
+
+        <button onclick="showSection('settings')" id="nav-settings"
+          class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600 text-left">
+          <i data-lucide="sliders" class="w-4 h-4 shrink-0"></i>
+          <span>Paramètres Système</span>
+        </button>
+
+        <a href="index.html" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600">
+          <i data-lucide="globe" class="w-4 h-4 shrink-0 text-brand-orange"></i>
+          <span>Voir le site public</span>
+        </a>
+
+        <a href="index.html" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-stone-600">
+          <i data-lucide="log-out" class="w-4 h-4 shrink-0"></i>
+          <span>Déconnexion</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Carte PWA Yassoi Live (Bannière sombre chaleureuse) -->
+    <div class="m-3 p-4 rounded-3xl bg-brand-dark text-white relative overflow-hidden shadow-lg border border-stone-800">
+      <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-brand-orange/20 blur-xl"></div>
+      <div class="flex items-center gap-2 relative">
+        <span class="text-xl">🎡</span>
+        <div>
+          <p class="text-xs font-black text-white">Chef Yassoi Oracle</p>
+          <p class="text-[10px] text-brand-peachDark">Roue magique active</p>
+        </div>
+      </div>
+      <p class="text-[10px] text-stone-400 mt-2 relative">Réseau street-food direct sans commission.</p>
+      <a href="index.html#chef-yassoi" class="mt-3 inline-flex items-center gap-1.5 w-full justify-center bg-gradient-to-r from-brand-orange to-amber-500 hover:from-brand-orangeHover hover:to-orange-600 text-white text-[11px] font-black py-2 rounded-xl relative shadow-md transition-all active:scale-95">
+        <span>Tester la Roue</span>
+        <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Overlay pour mobile -->
+  <div id="sidebarOverlay" onclick="closeSidebar()" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden hidden"></div>
+
+  <!-- ============================================================ -->
+  <!-- ZONE PRINCIPALE DU TABLEAU DE BORD                         -->
+  <!-- ============================================================ -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+    <!-- TOPBAR SUPÉRIEURE -->
+    <header class="bg-white border-b border-brand-peachDark/50 px-4 sm:px-6 h-16 flex items-center justify-between gap-4 sticky top-0 z-10 shadow-sm">
+
+      <!-- Bouton burger mobile & Recherche globale -->
+      <div class="flex items-center gap-3 flex-1">
+        <button onclick="toggleSidebar()" class="lg:hidden w-10 h-10 rounded-2xl border border-brand-peachDark hover:border-brand-orange flex items-center justify-center hover:bg-brand-peachLight transition-all active:scale-95" aria-label="Ouvrir menu">
+          <i data-lucide="menu" class="w-5 h-5 text-stone-700"></i>
+        </button>
+
+        <div class="relative max-w-sm w-full hidden sm:block">
+          <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400"></i>
+          <input type="text" id="globalSearchInput" onkeyup="handleGlobalSearch(event)" placeholder="Rechercher plat, étal, vendeuse, commune..."
+            class="w-full pl-10 pr-10 py-2 text-xs bg-brand-peachLight/60 border border-brand-peachDark/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-orange/40 focus:border-brand-orange focus:bg-white transition-all text-stone-800 placeholder:text-stone-400" />
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-stone-600 bg-brand-peachDark/50 px-1.5 py-0.5 rounded-md">⌘K</span>
+        </div>
+      </div>
+
+      <!-- Actions rapides à droite -->
+      <div class="flex items-center gap-3 shrink-0">
+        
+        <!-- Pastille live Abidjan -->
+        <div class="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-full">
+          <span class="live-dot w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span class="text-[11px] font-black text-emerald-800">158 Étals en Ligne</span>
+        </div>
+
+        <!-- Notification -->
+        <button onclick="showNotificationToast('3 nouvelles vendeuses enregistrées aujourd\'hui !')"
+          class="relative w-10 h-10 rounded-2xl border border-brand-peachDark/70 hover:border-brand-orange flex items-center justify-center hover:bg-brand-peachLight transition-all active:scale-95" title="Notifications">
+          <i data-lucide="bell" class="w-4 h-4 text-stone-700"></i>
+          <span class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-brand-orange ring-2 ring-white"></span>
+        </button>
+
+        <!-- Profil Administrateur -->
+        <div class="flex items-center gap-2.5 pl-3 border-l border-brand-peachDark/50">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-brand-orange to-amber-400 flex items-center justify-center text-white font-black text-sm shadow-md shadow-brand-orange/20">
+            Y
+          </div>
+          <div class="hidden md:block">
+            <p class="text-xs font-black text-brand-dark leading-none">Superviseur Yassoi</p>
+            <p class="text-[10px] text-stone-600 leading-tight">Abidjan · Accès Complet</p>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- ============================================================ -->
+    <!-- CORPS DU CONTENU SCROLLABLE                                  -->
+    <!-- ============================================================ -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+      <!-- ===================================================== -->
+      <!-- 1. SECTION: TABLEAU DE BORD GÉNÉRAL                   -->
+      <!-- ===================================================== -->
+      <div id="section-dashboard" class="space-y-6">
+
+        <!-- Titre de la page + Boutons d'action -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="font-serif font-black text-2xl sm:text-3xl text-brand-dark tracking-tight">Tableau de Bord</h1>
+            <p class="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">Supervisez les 158 étals de street-food, les flux d'itinéraires et les vendeuses d'Abidjan.</p>
+          </div>
+          <div class="flex items-center gap-2.5 shrink-0">
+            <button onclick="openAddEtalModal()"
+              class="flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeHover text-white text-xs font-extrabold px-4 py-2.5 rounded-2xl shadow-md shadow-brand-orange/25 transition-all hover:scale-105 active:scale-95">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Ajouter un Étal</span>
+            </button>
+            <button onclick="exportDataCSV()"
+              class="flex items-center gap-2 border border-brand-peachDark/80 bg-white hover:bg-brand-peachLight text-stone-700 text-xs font-bold px-4 py-2.5 rounded-2xl shadow-sm transition-all active:scale-95">
+              <i data-lucide="download" class="w-4 h-4 text-brand-orange"></i>
+              <span>Exporter (CSV)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- BANDEAU SÉLECTION ACTIVE NOTIFICATION -->
+        <div id="selectionFeedbackBar" class="hidden p-3 rounded-2xl bg-brand-peach border border-brand-peachDark text-xs font-bold text-brand-dark flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="check-circle" class="w-4 h-4 text-brand-orange"></i>
+            <span id="selectionFeedbackText">Élément sélectionné</span>
+          </div>
+          <button onclick="clearAllSelections()" class="text-[11px] text-brand-orange underline hover:text-brand-orangeHover font-extrabold">Désélectionner tout</button>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- 4 STAT CARDS INTERACTIVES & SÉLECTIONNABLES           -->
+        <!-- ===================================================== -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+          <!-- 1. Total Étals (Hero Card Orange par défaut) -->
+          <div onclick="selectStatCard(this, 'all')" id="statCard-total"
+            class="stat-card selected-stat rounded-3xl p-5 group">
+            <div class="stat-glow absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/15 blur-md pointer-events-none"></div>
+            <div class="flex items-center justify-between">
+              <p class="stat-label text-xs font-bold">Total Étals Enregistrés</p>
+              <div class="stat-icon-wrap w-8 h-8 rounded-full bg-brand-peach border border-brand-peachDark text-brand-orange flex items-center justify-center group-hover:rotate-45 transition-transform">
+                <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <p class="stat-value text-4xl sm:text-5xl font-black mt-3 tracking-tight font-serif count-up" id="stat-total">158</p>
+            <div class="flex items-center gap-1.5 mt-3">
+              <span class="stat-badge inline-flex items-center gap-1 text-[10px] font-black bg-brand-peach text-brand-orange border border-brand-peachDark px-2.5 py-0.5 rounded-full">
+                <i data-lucide="trending-up" class="w-3 h-3"></i>
+                +12 ce mois
+              </span>
+              <span class="stat-note text-[10px] text-stone-400 hidden sm:inline">&bull; 10 communes</span>
+            </div>
+          </div>
+
+          <!-- 2. Étals Ouverts (Pastel Green quand non-sélectionné) -->
+          <div onclick="selectStatCard(this, 'open')" id="statCard-open"
+            class="stat-card rounded-3xl p-5 group">
+            <div class="stat-glow absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/15 blur-md pointer-events-none"></div>
+            <div class="flex items-center justify-between">
+              <p class="stat-label text-xs font-bold">Ouverts Maintenant</p>
+              <div class="stat-icon-wrap w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <p class="stat-value text-4xl sm:text-5xl font-black mt-3 tracking-tight font-serif count-up" id="stat-open">124</p>
+            <div class="flex items-center gap-1.5 mt-3">
+              <span class="stat-badge text-[10px] font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                78.5% en service
+              </span>
+            </div>
+          </div>
+
+          <!-- 3. Hors Service (Pastel Red quand non-sélectionné) -->
+          <div onclick="selectStatCard(this, 'closed')" id="statCard-closed"
+            class="stat-card rounded-3xl p-5 group">
+            <div class="stat-glow absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/15 blur-md pointer-events-none"></div>
+            <div class="flex items-center justify-between">
+              <p class="stat-label text-xs font-bold">Hors Service / Stock Épuisé</p>
+              <div class="stat-icon-wrap w-8 h-8 rounded-full bg-red-50 border border-red-100 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i data-lucide="pause-circle" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <p class="stat-value text-4xl sm:text-5xl font-black mt-3 tracking-tight font-serif count-up" id="stat-closed">24</p>
+            <div class="flex items-center gap-1.5 mt-3">
+              <span class="stat-badge text-[10px] font-black px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
+                15.2% en pause
+              </span>
+            </div>
+          </div>
+
+          <!-- 4. Itinéraires GPS Activés (Brand Peach quand non-sélectionné) -->
+          <div onclick="selectStatCard(this, 'gps')" id="statCard-gps"
+            class="stat-card rounded-3xl p-5 group">
+            <div class="stat-glow absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-white/15 blur-md pointer-events-none"></div>
+            <div class="flex items-center justify-between">
+              <p class="stat-label text-xs font-bold">Itinéraires GPS Aujourd'hui</p>
+              <div class="stat-icon-wrap w-8 h-8 rounded-full bg-brand-peach border border-brand-peachDark text-brand-orange flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i data-lucide="navigation" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <p class="stat-value text-4xl sm:text-5xl font-black mt-3 tracking-tight font-serif count-up" id="stat-gps">342</p>
+            <div class="flex items-center gap-1.5 mt-3">
+              <span class="stat-badge text-[10px] font-black text-brand-orange bg-brand-peach border border-brand-peachDark px-2.5 py-0.5 rounded-full">
+                +42 vs moyenne
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- SECTION INTERMÉDIAIRE : GRAPHIQUE FRÉQUENTATION & ALERTES -->
+        <!-- ===================================================== -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- Colonne 1 & 2 : Graphique hebdomadaire Fréquentation -->
+          <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <h3 class="font-serif font-black text-lg text-brand-dark">Affluence Street-Food Hebdomadaire</h3>
+                <p class="text-xs text-stone-500 font-medium">Nombre d'itinéraires GPS activés vers les étals (Lun - Dim)</p>
+              </div>
+
+              <!-- Période chips sélectionnables -->
+              <div class="flex items-center gap-1.5 bg-brand-peachLight p-1 rounded-2xl border border-brand-peachDark/50">
+                <button onclick="changeChartPeriod(this, 'semaine')" class="period-btn active px-3 py-1 text-xs font-bold rounded-xl">Semaine</button>
+                <button onclick="changeChartPeriod(this, 'mois')" class="period-btn px-3 py-1 text-xs font-bold rounded-xl">Mois</button>
+                <button onclick="changeChartPeriod(this, 'annee')" class="period-btn px-3 py-1 text-xs font-bold rounded-xl">Année</button>
+              </div>
+            </div>
+
+            <div class="relative h-56 w-full">
+              <canvas id="weekChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Colonne 3 : Alertes & Événements en direct -->
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-serif font-black text-base text-brand-dark">Alertes Opérationnelles</h3>
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-orange animate-pulse"></span>
+              </div>
+
+              <div class="space-y-3">
+                
+                <!-- Alerte 1: Coup de feu de midi -->
+                <div class="selectable-card p-3.5 rounded-2xl bg-brand-peachLight border border-brand-peachDark/60 hover:border-brand-orange" onclick="selectAlertCard(this, 'Rush Garba')">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-black text-brand-orange flex items-center gap-1.5">
+                      <span>🔥</span>
+                      Rush Street-Food
+                    </span>
+                    <span class="text-[9px] font-bold text-stone-500">12h00 - 14h30</span>
+                  </div>
+                  <p class="text-xs text-stone-700 font-medium mt-1">Pic de requêtes Garba & Choukouya sur Yopougon et Cocody.</p>
+                </div>
+
+                <!-- Alerte 2: Nouvelle Vendeuse -->
+                <div class="selectable-card p-3.5 rounded-2xl bg-white border border-stone-100 hover:border-brand-orange" onclick="selectAlertCard(this, 'Adjoua Beignets')">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 font-bold text-xs">
+                      🍩
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-xs font-bold text-stone-900 truncate">Vendeuse de Beignets connectée</p>
+                      <p class="text-[10px] text-stone-500">Mme Koffi · Gnonmi chaud à Marcory</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Alerte 3: Avis 5 étoiles -->
+                <div class="selectable-card p-3.5 rounded-2xl bg-white border border-stone-100 hover:border-brand-orange" onclick="selectAlertCard(this, 'Avis 5 étoiles')">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-xl bg-brand-peach text-brand-orange flex items-center justify-center shrink-0">
+                      <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-400"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-xs font-bold text-stone-900 truncate">Nouvel avis vérifié 5/5</p>
+                      <p class="text-[10px] text-stone-500">Alloco Pimenté · "Le meilleur piment de Yop !"</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Bouton rapide d'action -->
+            <button onclick="showSection('etals')" class="mt-4 w-full py-2.5 rounded-xl bg-stone-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95">
+              <span>Superviser la carte</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- GRILLE INFÉRIEURE : VENDEUSES, PROGRESSION, PLATS     -->
+        <!-- ===================================================== -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          <!-- 1. Vendeuses Actives (Sélectionnables) -->
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-serif font-black text-base text-brand-dark">Vendeuses Phares</h3>
+              <button onclick="showSection('vendeuses')" class="text-[11px] font-bold text-brand-orange hover:underline">Voir tout (34)</button>
+            </div>
+
+            <div class="space-y-2.5" id="vendeusesQuickList">
+              
+              <!-- Vendeuse 1 -->
+              <div onclick="selectItemCard(this, 'Aya Koné')" class="selectable-card flex items-center justify-between p-2.5 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img src="assets/images/GARBA.jfif" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-brand-peachDark" alt="Garba" />
+                  <div class="truncate">
+                    <p class="text-xs font-black text-stone-900 truncate">Aya Koné (Maman Garba)</p>
+                    <p class="text-[10px] text-stone-500">Cocody Saint-Jean &bull; <strong class="text-brand-orange">1 500 F</strong></p>
+                  </div>
+                </div>
+                <span class="badge-open text-[9px] font-black px-2 py-0.5 rounded-full shrink-0">Ouvert</span>
+              </div>
+
+              <!-- Vendeuse 2 -->
+              <div onclick="selectItemCard(this, 'Fatou Diallo')" class="selectable-card flex items-center justify-between p-2.5 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img src="assets/images/ALLOCO.jfif" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-brand-peachDark" alt="Alloco" />
+                  <div class="truncate">
+                    <p class="text-xs font-black text-stone-900 truncate">Fatou Diallo (Alloco Doré)</p>
+                    <p class="text-[10px] text-stone-500">Yopougon Bel-Air &bull; <strong class="text-brand-orange">500 F</strong></p>
+                  </div>
+                </div>
+                <span class="badge-open text-[9px] font-black px-2 py-0.5 rounded-full shrink-0">Ouvert</span>
+              </div>
+
+              <!-- Vendeuse 3 -->
+              <div onclick="selectItemCard(this, 'Mme Koffi')" class="selectable-card flex items-center justify-between p-2.5 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img src="assets/images/Gnonmi.jfif" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-brand-peachDark" alt="Gnonmi" />
+                  <div class="truncate">
+                    <p class="text-xs font-black text-stone-900 truncate">Mme Koffi (Beignets & Baka)</p>
+                    <p class="text-[10px] text-stone-500">Marcory Anoumabo &bull; <strong class="text-brand-orange">200 F</strong></p>
+                  </div>
+                </div>
+                <span class="badge-busy text-[9px] font-black px-2 py-0.5 rounded-full shrink-0">Chargé</span>
+              </div>
+
+              <!-- Vendeuse 4 -->
+              <div onclick="selectItemCard(this, 'Tantine Marie')" class="selectable-card flex items-center justify-between p-2.5 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img src="assets/images/Du Coco râpé grillé.jfif" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-brand-peachDark" alt="Fruits" />
+                  <div class="truncate">
+                    <p class="text-xs font-black text-stone-900 truncate">Tantine Marie (Fruits & Coco)</p>
+                    <p class="text-[10px] text-stone-500">Plateau Commerce &bull; <strong class="text-brand-orange">300 F</strong></p>
+                  </div>
+                </div>
+                <span class="badge-open text-[9px] font-black px-2 py-0.5 rounded-full shrink-0">Ouvert</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 2. Taux de Complétude Plateforme (Jauge Donut Yassoi) -->
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm flex flex-col items-center justify-between text-center">
+            <div class="w-full text-left">
+              <h3 class="font-serif font-black text-base text-brand-dark">Qualité des Fiches GPS</h3>
+              <p class="text-xs text-stone-500">Données vérifiées par les équipes terrain</p>
+            </div>
+
+            <!-- Donut SVG aux couleurs de la marque -->
+            <div class="relative w-36 h-36 my-3">
+              <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                <!-- Background track -->
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#FEEFE7" stroke-width="3.2"/>
+                <!-- Orange slice (78%) -->
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#E8590C" stroke-width="3.2"
+                  stroke-dasharray="78 22" stroke-linecap="round"/>
+                <!-- Amber highlight (14%) -->
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F59E0B" stroke-width="3.2"
+                  stroke-dasharray="14 86" stroke-dashoffset="-78" stroke-linecap="round"/>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-3xl font-black font-serif text-brand-dark">92%</span>
+                <span class="text-[9px] font-bold text-stone-500 uppercase tracking-wider">Vérifié GPS</span>
+              </div>
+            </div>
+
+            <!-- Légende détaillée -->
+            <div class="w-full space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-stone-600 font-semibold">
+                  <span class="w-2.5 h-2.5 rounded-full bg-brand-orange"></span>
+                  Coordonnées GPS directes
+                </span>
+                <span class="font-black text-stone-900">78%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-stone-600 font-semibold">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  Photos réelles & tarifs
+                </span>
+                <span class="font-black text-stone-900">14%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-stone-600 font-semibold">
+                  <span class="w-2.5 h-2.5 rounded-full bg-stone-300"></span>
+                  En cours de confirmation
+                </span>
+                <span class="font-black text-stone-900">8%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Catalogue Street-Food Phare (Sélectionnable) -->
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-serif font-black text-base text-brand-dark">Top Plats Populaires</h3>
+              <span class="text-xs font-bold text-brand-orange">17 Spécialités</span>
+            </div>
+
+            <div class="space-y-2" id="topDishesList">
+              
+              <div onclick="selectItemCard(this, 'Garba National')" class="selectable-card flex items-center justify-between p-2 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-2.5">
+                  <img src="assets/images/GARBA.jfif" class="w-8 h-8 rounded-xl object-cover shrink-0" alt="" />
+                  <div>
+                    <p class="text-xs font-bold text-stone-900">Garba National</p>
+                    <p class="text-[9px] text-stone-500">500 - 1 500 F</p>
+                  </div>
+                </div>
+                <span class="text-xs font-black text-brand-orange">⭐ 4.9</span>
+              </div>
+
+              <div onclick="selectItemCard(this, 'Alloco Doré')" class="selectable-card flex items-center justify-between p-2 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-2.5">
+                  <img src="assets/images/ALLOCO.jfif" class="w-8 h-8 rounded-xl object-cover shrink-0" alt="" />
+                  <div>
+                    <p class="text-xs font-bold text-stone-900">Alloco Pimenté</p>
+                    <p class="text-[9px] text-stone-500">200 - 600 F</p>
+                  </div>
+                </div>
+                <span class="text-xs font-black text-brand-orange">⭐ 4.8</span>
+              </div>
+
+              <div onclick="selectItemCard(this, 'Choukouya Agneau')" class="selectable-card flex items-center justify-between p-2 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-2.5">
+                  <img src="assets/images/choukouya.jfif" class="w-8 h-8 rounded-xl object-cover shrink-0" alt="" />
+                  <div>
+                    <p class="text-xs font-bold text-stone-900">Choukouya Agneau</p>
+                    <p class="text-[9px] text-stone-500">1 000 - 3 000 F</p>
+                  </div>
+                </div>
+                <span class="text-xs font-black text-brand-orange">⭐ 4.9</span>
+              </div>
+
+              <div onclick="selectItemCard(this, 'Pain Chien Chaud')" class="selectable-card flex items-center justify-between p-2 rounded-2xl border border-stone-100 hover:border-brand-orange/40 transition-all">
+                <div class="flex items-center gap-2.5">
+                  <img src="assets/images/Pain chien_.jfif" class="w-8 h-8 rounded-xl object-cover shrink-0" alt="" />
+                  <div>
+                    <p class="text-xs font-bold text-stone-900">Pain Chien Chaud</p>
+                    <p class="text-[9px] text-stone-500">300 - 700 F</p>
+                  </div>
+                </div>
+                <span class="text-xs font-black text-brand-orange">⭐ 4.7</span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- TIME TRACKER & DISPONIBILITÉ SYSTÈME                  -->
+        <!-- ===================================================== -->
+        <div class="bg-gradient-to-r from-stone-900 via-stone-950 to-brand-dark rounded-3xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl border border-stone-800">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-brand-orange/20 border border-brand-orange/40 flex items-center justify-center text-brand-orange text-xl">
+              ⏱
+            </div>
+            <div>
+              <p class="text-xs font-bold text-stone-400 uppercase tracking-wider">Disponibilité Système PWA (Abidjan)</p>
+              <p class="text-3xl font-black font-serif tracking-tight text-white mt-0.5" id="uptimeClock">00:00:00</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-stone-800/80 px-3 py-1.5 rounded-xl border border-stone-700">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-xs font-bold text-stone-200">100% Fonctionnel</span>
+            </div>
+            <button onclick="toggleUptime()" class="w-10 h-10 rounded-2xl bg-brand-orange hover:bg-brand-orangeHover flex items-center justify-center text-white transition-all active:scale-95 shadow-md shadow-brand-orange/20" title="Pause/Play timer">
+              <i data-lucide="pause" class="w-4 h-4" id="uptimeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /section-dashboard -->
+
+      <!-- ===================================================== -->
+      <!-- 2. SECTION: GESTION DES ÉTALS (AVEC FILTRES & SÉLECTION ROW) -->
+      <!-- ===================================================== -->
+      <div id="section-etals" class="hidden space-y-6">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="font-serif font-black text-2xl sm:text-3xl text-brand-dark tracking-tight">Gestion des Étals de Street-Food</h1>
+            <p class="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">Cliquez sur une ligne pour la sélectionner et la modifier directement.</p>
+          </div>
+          <button onclick="openAddEtalModal()"
+            class="flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeHover text-white text-xs font-black px-4 py-2.5 rounded-2xl shadow-md shadow-brand-orange/25 transition-all hover:scale-105 active:scale-95 shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Nouvel Étal</span>
+          </button>
+        </div>
+
+        <!-- BARRE DE FILTRES PILULES SÉLECTIONNABLES -->
+        <div class="flex flex-wrap items-center gap-2 bg-white p-3 rounded-3xl border border-brand-peachDark/60 shadow-sm" id="etalsFilterContainer">
+          <span class="text-xs font-black text-stone-400 uppercase tracking-wider px-2">Filtres :</span>
+          
+          <button onclick="filterEtalsTable('all', this)" class="filter-pill active px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Tous (158)
+          </button>
+          <button onclick="filterEtalsTable('open', this)" class="filter-pill px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Ouverts (124)
+          </button>
+          <button onclick="filterEtalsTable('closed', this)" class="filter-pill px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Fermés (24)
+          </button>
+          <button onclick="filterEtalsTable('Cocody', this)" class="filter-pill px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Cocody
+          </button>
+          <button onclick="filterEtalsTable('Yopougon', this)" class="filter-pill px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Yopougon
+          </button>
+          <button onclick="filterEtalsTable('Marcory', this)" class="filter-pill px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Marcory
+          </button>
+          <button onclick="filterEtalsTable('Treichville', this)" class="filter-pill px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Treichville
+          </button>
+          <button onclick="filterEtalsTable('Plateau', this)" class="filter-pill px-3.5 py-1.5 text-xs font-bold rounded-2xl bg-white text-stone-700 border border-brand-peachDark/70">
+            Plateau
+          </button>
+        </div>
+
+        <!-- TABLEAU DES ÉTALS AVEC SÉLECTION ROW CLIQUEE -->
+        <div class="bg-white rounded-3xl border border-brand-peachDark/60 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left" id="etalsMainTable">
+              <thead>
+                <tr class="bg-brand-peachLight/80 border-b border-brand-peachDark/50 text-[11px] font-black uppercase tracking-wider text-stone-500">
+                  <th class="py-3.5 px-4">Spécialité & Étal</th>
+                  <th class="py-3.5 px-4 hidden sm:table-cell">Vendeuse</th>
+                  <th class="py-3.5 px-4 hidden md:table-cell">Commune</th>
+                  <th class="py-3.5 px-4 hidden lg:table-cell">Tarifs</th>
+                  <th class="py-3.5 px-4">Statut</th>
+                  <th class="py-3.5 px-4 hidden sm:table-cell">Note</th>
+                  <th class="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-brand-peachDark/30" id="etalsTableBody">
+                
+                <!-- Ligne 1 : Garba -->
+                <tr onclick="selectTableRow(this, 1)" id="row-etal-1" class="table-row-selectable selected-row" data-commune="Cocody" data-status="open">
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-3">
+                      <img src="assets/images/GARBA.jfif" class="w-10 h-10 rounded-2xl object-cover shrink-0 border border-brand-peachDark" alt="Garba" />
+                      <div>
+                        <p class="font-black text-brand-dark text-sm">Le Garba National</p>
+                        <p class="text-[10px] text-stone-500">Attiéké fin + Thon frit croustillant</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-bold text-stone-700">Aya Koné</td>
+                  <td class="py-3.5 px-4 hidden md:table-cell font-semibold text-stone-600">Cocody Saint-Jean</td>
+                  <td class="py-3.5 px-4 hidden lg:table-cell font-black text-brand-orange">500 - 1 500 F</td>
+                  <td class="py-3.5 px-4"><span class="badge-open text-[10px] font-black px-2.5 py-0.5 rounded-full">Ouvert</span></td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-black text-amber-500">⭐ 4.9</td>
+                  <td class="py-3.5 px-4 text-right">
+                    <button onclick="event.stopPropagation(); editEtal(1)" class="w-8 h-8 rounded-xl bg-brand-peach hover:bg-brand-peachDark text-brand-orange inline-flex items-center justify-center transition-colors">
+                      <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Ligne 2 : Alloco -->
+                <tr onclick="selectTableRow(this, 2)" id="row-etal-2" class="table-row-selectable" data-commune="Yopougon" data-status="open">
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-3">
+                      <img src="assets/images/ALLOCO.jfif" class="w-10 h-10 rounded-2xl object-cover shrink-0 border border-brand-peachDark" alt="Alloco" />
+                      <div>
+                        <p class="font-black text-brand-dark text-sm">L'Alloco Doré</p>
+                        <p class="text-[10px] text-stone-500">Banane plantain bien mûre + piment frais</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-bold text-stone-700">Fatou Diallo</td>
+                  <td class="py-3.5 px-4 hidden md:table-cell font-semibold text-stone-600">Yopougon Bel-Air</td>
+                  <td class="py-3.5 px-4 hidden lg:table-cell font-black text-brand-orange">200 - 600 F</td>
+                  <td class="py-3.5 px-4"><span class="badge-open text-[10px] font-black px-2.5 py-0.5 rounded-full">Ouvert</span></td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-black text-amber-500">⭐ 4.8</td>
+                  <td class="py-3.5 px-4 text-right">
+                    <button onclick="event.stopPropagation(); editEtal(2)" class="w-8 h-8 rounded-xl bg-brand-peach hover:bg-brand-peachDark text-brand-orange inline-flex items-center justify-center transition-colors">
+                      <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Ligne 3 : Choukouya -->
+                <tr onclick="selectTableRow(this, 3)" id="row-etal-3" class="table-row-selectable" data-commune="Treichville" data-status="open">
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-3">
+                      <img src="assets/images/choukouya.jfif" class="w-10 h-10 rounded-2xl object-cover shrink-0 border border-brand-peachDark" alt="Choukouya" />
+                      <div>
+                        <p class="font-black text-brand-dark text-sm">Le Choukouya d'Agneau</p>
+                        <p class="text-[10px] text-stone-500">Grillé au charbon et assaisonné kankankan</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-bold text-stone-700">Mariama Bamba</td>
+                  <td class="py-3.5 px-4 hidden md:table-cell font-semibold text-stone-600">Treichville Arras</td>
+                  <td class="py-3.5 px-4 hidden lg:table-cell font-black text-brand-orange">1 000 - 3 000 F</td>
+                  <td class="py-3.5 px-4"><span class="badge-busy text-[10px] font-black px-2.5 py-0.5 rounded-full">Rush</span></td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-black text-amber-500">⭐ 4.9</td>
+                  <td class="py-3.5 px-4 text-right">
+                    <button onclick="event.stopPropagation(); editEtal(3)" class="w-8 h-8 rounded-xl bg-brand-peach hover:bg-brand-peachDark text-brand-orange inline-flex items-center justify-center transition-colors">
+                      <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Ligne 4 : Gnonmi & Beignets -->
+                <tr onclick="selectTableRow(this, 4)" id="row-etal-4" class="table-row-selectable" data-commune="Marcory" data-status="closed">
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-3">
+                      <img src="assets/images/Gnonmi.jfif" class="w-10 h-10 rounded-2xl object-cover shrink-0 border border-brand-peachDark" alt="Gnonmi" />
+                      <div>
+                        <p class="font-black text-brand-dark text-sm">Gnonmi & Galettes Rouges</p>
+                        <p class="text-[10px] text-stone-500">Beignets de mil croustillants + Baka chaud</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-bold text-stone-700">Adjoua Koffi</td>
+                  <td class="py-3.5 px-4 hidden md:table-cell font-semibold text-stone-600">Marcory Anoumabo</td>
+                  <td class="py-3.5 px-4 hidden lg:table-cell font-black text-brand-orange">100 - 500 F</td>
+                  <td class="py-3.5 px-4"><span class="badge-closed text-[10px] font-black px-2.5 py-0.5 rounded-full">Fermé</span></td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-black text-amber-500">⭐ 4.8</td>
+                  <td class="py-3.5 px-4 text-right">
+                    <button onclick="event.stopPropagation(); editEtal(4)" class="w-8 h-8 rounded-xl bg-brand-peach hover:bg-brand-peachDark text-brand-orange inline-flex items-center justify-center transition-colors">
+                      <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Ligne 5 : Pain Chien -->
+                <tr onclick="selectTableRow(this, 5)" id="row-etal-5" class="table-row-selectable" data-commune="Yopougon" data-status="open">
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-3">
+                      <img src="assets/images/Pain chien_.jfif" class="w-10 h-10 rounded-2xl object-cover shrink-0 border border-brand-peachDark" alt="Pain Chien" />
+                      <div>
+                        <p class="font-black text-brand-dark text-sm">Pain Chien Chaud & Penavona</p>
+                        <p class="text-[10px] text-stone-500">Baguette chaude garnie saucisses et sauces</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-bold text-stone-700">Mariam Coulibaly</td>
+                  <td class="py-3.5 px-4 hidden md:table-cell font-semibold text-stone-600">Yopougon Siporex</td>
+                  <td class="py-3.5 px-4 hidden lg:table-cell font-black text-brand-orange">300 - 800 F</td>
+                  <td class="py-3.5 px-4"><span class="badge-open text-[10px] font-black px-2.5 py-0.5 rounded-full">Ouvert</span></td>
+                  <td class="py-3.5 px-4 hidden sm:table-cell font-black text-amber-500">⭐ 4.7</td>
+                  <td class="py-3.5 px-4 text-right">
+                    <button onclick="event.stopPropagation(); editEtal(5)" class="w-8 h-8 rounded-xl bg-brand-peach hover:bg-brand-peachDark text-brand-orange inline-flex items-center justify-center transition-colors">
+                      <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination chaleureuse -->
+          <div class="p-4 border-t border-brand-peachDark/40 flex items-center justify-between text-xs text-stone-500 bg-brand-peachLight/30">
+            <span>Affichage de <strong>5</strong> étals sur 158</span>
+            <div class="flex items-center gap-1.5">
+              <button class="w-8 h-8 rounded-xl border border-brand-peachDark hover:bg-white flex items-center justify-center font-bold text-stone-600"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+              <button class="w-8 h-8 rounded-xl bg-brand-orange text-white font-black flex items-center justify-center shadow-xs">1</button>
+              <button class="w-8 h-8 rounded-xl border border-brand-peachDark hover:bg-white flex items-center justify-center font-bold text-stone-600">2</button>
+              <button class="w-8 h-8 rounded-xl border border-brand-peachDark hover:bg-white flex items-center justify-center font-bold text-stone-600">3</button>
+              <button class="w-8 h-8 rounded-xl border border-brand-peachDark hover:bg-white flex items-center justify-center font-bold text-stone-600"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /section-etals -->
+
+      <!-- ===================================================== -->
+      <!-- 3. SECTION: VENDEUSES DE RUE                          -->
+      <!-- ===================================================== -->
+      <div id="section-vendeuses" class="hidden space-y-6">
+        <div>
+          <h1 class="font-serif font-black text-2xl sm:text-3xl text-brand-dark tracking-tight">Vendeuses de Rue d'Abidjan</h1>
+          <p class="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">Cliquez sur une fiche pour la sélectionner et gérer son profil direct.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div onclick="selectItemCard(this, 'Aya Koné')" class="selectable-card bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm text-center">
+            <img src="assets/images/GARBA.jfif" class="w-20 h-20 rounded-3xl object-cover mx-auto mb-4 border-4 border-brand-peach shadow-md" alt="" />
+            <h3 class="font-black text-base text-brand-dark">Aya Koné</h3>
+            <p class="text-xs text-brand-orange font-bold">Spécialiste Garba Thon Croustillant</p>
+            <p class="text-xs text-stone-500 mt-1">Cocody Saint-Jean &bull; Depuis 12 ans</p>
+            <div class="mt-4 pt-4 border-t border-brand-peachDark/30 flex items-center justify-around text-xs">
+              <div><span class="block font-black text-stone-900">4.9/5</span><span class="text-[10px] text-stone-400">Note</span></div>
+              <div class="w-px h-6 bg-stone-200"></div>
+              <div><span class="block font-black text-brand-orange">1 500 F</span><span class="text-[10px] text-stone-400">Prix moyen</span></div>
+              <div class="w-px h-6 bg-stone-200"></div>
+              <div><span class="badge-open text-[9px] font-black px-2 py-0.5 rounded-full">Ouvert</span></div>
+            </div>
+          </div>
+
+          <div onclick="selectItemCard(this, 'Fatou Diallo')" class="selectable-card bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm text-center">
+            <img src="assets/images/ALLOCO.jfif" class="w-20 h-20 rounded-3xl object-cover mx-auto mb-4 border-4 border-brand-peach shadow-md" alt="" />
+            <h3 class="font-black text-base text-brand-dark">Fatou Diallo</h3>
+            <p class="text-xs text-brand-orange font-bold">L'Alloco Doré & Sauce Piment</p>
+            <p class="text-xs text-stone-500 mt-1">Yopougon Bel-Air &bull; Depuis 8 ans</p>
+            <div class="mt-4 pt-4 border-t border-brand-peachDark/30 flex items-center justify-around text-xs">
+              <div><span class="block font-black text-stone-900">4.8/5</span><span class="text-[10px] text-stone-400">Note</span></div>
+              <div class="w-px h-6 bg-stone-200"></div>
+              <div><span class="block font-black text-brand-orange">500 F</span><span class="text-[10px] text-stone-400">Prix moyen</span></div>
+              <div class="w-px h-6 bg-stone-200"></div>
+              <div><span class="badge-open text-[9px] font-black px-2 py-0.5 rounded-full">Ouvert</span></div>
+            </div>
+          </div>
+
+          <div onclick="selectItemCard(this, 'Adjoua Koffi')" class="selectable-card bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm text-center">
+            <img src="assets/images/Gnonmi.jfif" class="w-20 h-20 rounded-3xl object-cover mx-auto mb-4 border-4 border-brand-peach shadow-md" alt="" />
+            <h3 class="font-black text-base text-brand-dark">Adjoua Koffi</h3>
+            <p class="text-xs text-brand-orange font-bold">Beignets, Gnonmi & Baka Chaud</p>
+            <p class="text-xs text-stone-500 mt-1">Marcory Anoumabo &bull; Depuis 15 ans</p>
+            <div class="mt-4 pt-4 border-t border-brand-peachDark/30 flex items-center justify-around text-xs">
+              <div><span class="block font-black text-stone-900">4.8/5</span><span class="text-[10px] text-stone-400">Note</span></div>
+              <div class="w-px h-6 bg-stone-200"></div>
+              <div><span class="block font-black text-brand-orange">200 F</span><span class="text-[10px] text-stone-400">Prix moyen</span></div>
+              <div class="w-px h-6 bg-stone-200"></div>
+              <div><span class="badge-closed text-[9px] font-black px-2 py-0.5 rounded-full">Fermé</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /section-vendeuses -->
+
+      <!-- ===================================================== -->
+      <!-- 4. SECTION: ITINÉRAIRES GPS                           -->
+      <!-- ===================================================== -->
+      <div id="section-commandes" class="hidden space-y-6">
+        <div>
+          <h1 class="font-serif font-black text-2xl sm:text-3xl text-brand-dark tracking-tight">Suivi des Itinéraires GPS</h1>
+          <p class="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">Activations temps réel des coordonnées GPS vers les étals (Zéro intermédiaire).</p>
+        </div>
+
+        <div class="bg-white rounded-3xl p-8 border border-brand-peachDark/60 shadow-sm text-center max-w-xl mx-auto space-y-4">
+          <div class="w-16 h-16 rounded-3xl bg-brand-peach border border-brand-peachDark flex items-center justify-center text-brand-orange mx-auto shadow-inner">
+            <i data-lucide="map-pin" class="w-8 h-8"></i>
+          </div>
+          <h3 class="font-serif font-black text-xl text-brand-dark">342 Itinéraires Directs Aujourd'hui</h3>
+          <p class="text-xs text-stone-600 leading-relaxed">Les clients ouvrent l'itinéraire Google Maps natif vers l'emplacement exact de la vendeuse. Aucun numéro n'est intercepté, aucune commission n'est prélevée.</p>
+          <a href="index.html#carte" class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeHover text-white text-xs font-black px-6 py-3 rounded-2xl shadow-md shadow-brand-orange/20 transition-all hover:scale-105">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+            <span>Visualiser la Carte Interactive Direct</span>
+          </a>
+        </div>
+      </div><!-- /section-commandes -->
+
+      <!-- ===================================================== -->
+      <!-- 5. SECTION: ANALYTIQUES ABIDJAN                       -->
+      <!-- ===================================================== -->
+      <div id="section-analytics" class="hidden space-y-6">
+        <div>
+          <h1 class="font-serif font-black text-2xl sm:text-3xl text-brand-dark tracking-tight">Analytiques Street-Food Abidjan</h1>
+          <p class="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">Volume de recherches, plats phares et communes les plus actives.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Barres Top Plats -->
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm space-y-4">
+            <h3 class="font-serif font-black text-base text-brand-dark">🏆 Top Plats les plus recherchés</h3>
+            
+            <div class="space-y-3 text-xs font-bold">
+              <div>
+                <div class="flex justify-between mb-1"><span>Le Garba National</span><span class="text-brand-orange">42%</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-brand-orange" style="width: 84%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>L'Alloco Pimenté</span><span class="text-brand-orange">28%</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-amber-500" style="width: 56%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>Le Choukouya d'Agneau</span><span class="text-brand-orange">16%</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-orange-400" style="width: 32%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>Gnonmi & Beignets de mil</span><span class="text-brand-orange">14%</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-amber-400" style="width: 28%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barres Top Communes -->
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm space-y-4">
+            <h3 class="font-serif font-black text-base text-brand-dark">🗺️ Communes à forte affluence</h3>
+            
+            <div class="space-y-3 text-xs font-bold">
+              <div>
+                <div class="flex justify-between mb-1"><span>Yopougon</span><span class="text-brand-orange">38 étals</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-brand-orange" style="width: 90%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>Cocody</span><span class="text-brand-orange">31 étals</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-amber-500" style="width: 74%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>Marcory</span><span class="text-brand-orange">24 étals</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-orange-400" style="width: 58%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>Treichville</span><span class="text-brand-orange">20 étals</span></div>
+                <div class="progress-bar"><div class="progress-fill bg-amber-400" style="width: 48%"></div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Grand graphique mensuel d'évolution -->
+        <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm">
+          <h3 class="font-serif font-black text-base text-brand-dark mb-4">Évolution Annuelle des Activations GPS</h3>
+          <div class="relative h-64 w-full">
+            <canvas id="monthChart"></canvas>
+          </div>
+        </div>
+
+      </div><!-- /section-analytics -->
+
+      <!-- ===================================================== -->
+      <!-- 6. SECTION: PUBS & PARTENARIATS                       -->
+      <!-- ===================================================== -->
+      <div id="section-partenariats" class="hidden space-y-6">
+        <div>
+          <h1 class="font-serif font-black text-2xl sm:text-3xl text-brand-dark tracking-tight">Régie Pubs & Sponsors</h1>
+          <p class="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">Demandes de partenariats des marques de boissons, télécoms et festivals.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm text-center">
+            <p class="text-xs font-bold text-stone-400 uppercase">Demandes En Cours</p>
+            <p class="text-4xl font-serif font-black text-brand-dark mt-2">7</p>
+          </div>
+          <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm text-center">
+            <p class="text-xs font-bold text-stone-400 uppercase">Partenariats Actifs</p>
+            <p class="text-4xl font-serif font-black text-brand-orange mt-2">3</p>
+          </div>
+          <div class="bg-brand-orange text-white rounded-3xl p-6 shadow-lg shadow-brand-orange/20 text-center">
+            <p class="text-xs font-bold text-white/80 uppercase">Revenus Régie (Mois)</p>
+            <p class="text-4xl font-serif font-black mt-2">1.8M F</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm space-y-3">
+          <h3 class="font-serif font-black text-base text-brand-dark mb-2">Demandes récentes reçues via le formulaire</h3>
+          
+          <div class="selectable-card p-4 rounded-2xl bg-brand-peachLight/60 border border-brand-peachDark/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" onclick="selectItemCard(this, 'Brasserie Ivoire')">
+            <div>
+              <p class="text-xs font-black text-brand-dark">Brasserie Ivoire &bull; Régie Boisson Locale</p>
+              <p class="text-[11px] text-stone-500">Campagne étals prioritaires &bull; Yopougon & Cocody &bull; 800 000 FCFA</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="showNotificationToast('Partenariat Brasserie validé !')" class="px-3.5 py-1.5 rounded-xl bg-brand-orange text-white font-bold text-xs shadow-xs">Accepter</button>
+              <button class="px-3.5 py-1.5 rounded-xl border border-stone-200 text-stone-600 font-bold text-xs hover:bg-stone-50">Refuser</button>
+            </div>
+          </div>
+
+          <div class="selectable-card p-4 rounded-2xl bg-white border border-stone-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" onclick="selectItemCard(this, 'Festival Grillades')">
+            <div>
+              <p class="text-xs font-black text-brand-dark">Festival des Grillades d'Abidjan &bull; Sponsoring</p>
+              <p class="text-[11px] text-stone-500">Mise en avant Choukouya & APF &bull; 1 200 000 FCFA</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="showNotificationToast('Festival validé !')" class="px-3.5 py-1.5 rounded-xl bg-brand-orange text-white font-bold text-xs shadow-xs">Accepter</button>
+              <button class="px-3.5 py-1.5 rounded-xl border border-stone-200 text-stone-600 font-bold text-xs hover:bg-stone-50">Refuser</button>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /section-partenariats -->
+
+      <!-- ===================================================== -->
+      <!-- 7. SECTION: PARAMÈTRES SYSTÈME                        -->
+      <!-- ===================================================== -->
+      <div id="section-settings" class="hidden space-y-6">
+        <div>
+          <h1 class="font-serif font-black text-2xl sm:text-3xl text-brand-dark tracking-tight">Paramètres Plateforme</h1>
+          <p class="text-xs sm:text-sm text-stone-500 font-medium mt-0.5">Configuration du moteur de recherche et de l'oracle Chef Yassoi.</p>
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 border border-brand-peachDark/60 shadow-sm max-w-2xl space-y-4">
+          <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-brand-peachLight/50 transition-colors">
+            <div>
+              <p class="text-xs font-black text-stone-900">Oracle Chef Yassoi (Roue Interactive)</p>
+              <p class="text-[11px] text-stone-500">Active la recommandation par budget (300F - 3000F)</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-orange"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-brand-peachLight/50 transition-colors">
+            <div>
+              <p class="text-xs font-black text-stone-900">Radar Sonar Visuel (Carte Live)</p>
+              <p class="text-[11px] text-stone-500">Animation du faisceau radar balayant les 10 communes</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-orange"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-brand-peachLight/50 transition-colors">
+            <div>
+              <p class="text-xs font-black text-stone-900">Mode Zéro Intermédiaire Strict</p>
+              <p class="text-[11px] text-stone-500">Renvoie exclusivement vers l'application GPS de l'appareil</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-orange"></div>
+            </label>
+          </div>
+        </div>
+      </div><!-- /section-settings -->
+
+    </main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: AJOUTER / MODIFIER UN ÉTAL                            -->
+  <!-- ============================================================ -->
+  <div id="addEtalModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-brand-peachDark">
+      <div class="flex items-center justify-between p-5 border-b border-brand-peachDark/50 bg-brand-peachLight/60">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🍲</span>
+          <h3 class="font-serif font-black text-base text-brand-dark" id="modalEtalTitle">Ajouter un Étal Street-Food</h3>
+        </div>
+        <button onclick="closeAddEtalModal()" class="w-8 h-8 rounded-full bg-white border border-brand-peachDark hover:bg-brand-peach flex items-center justify-center transition-colors">
+          <i data-lucide="x" class="w-4 h-4 text-stone-600"></i>
+        </button>
+      </div>
+
+      <form class="p-6 space-y-4" onsubmit="event.preventDefault(); saveEtal();">
+        <div>
+          <label class="text-xs font-bold text-stone-700 block mb-1.5">Nom de la Spécialité *</label>
+          <input type="text" id="modalEtalName" required placeholder="ex: Le Garba National de Saint-Jean"
+            class="w-full border border-brand-peachDark rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange bg-brand-peachLight/30" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-stone-700 block mb-1.5">Commune d'Abidjan *</label>
+            <select id="modalEtalCommune" class="w-full border border-brand-peachDark rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange bg-white font-semibold">
+              <option>Cocody</option>
+              <option>Yopougon</option>
+              <option>Marcory</option>
+              <option>Treichville</option>
+              <option>Plateau</option>
+              <option>Adjamé</option>
+              <option>Abobo</option>
+              <option>Koumassi</option>
+              <option>Port-Bouët</option>
+              <option>Attécoubé</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-stone-700 block mb-1.5">Fourchette de Prix *</label>
+            <input type="text" id="modalEtalPrice" required placeholder="ex: 500 - 1 500 FCFA"
+              class="w-full border border-brand-peachDark rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange bg-brand-peachLight/30" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-stone-700 block mb-1.5">Nom de la Vendeuse</label>
+            <input type="text" id="modalEtalVendor" placeholder="ex: Aya Koné"
+              class="w-full border border-brand-peachDark rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange bg-brand-peachLight/30" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-stone-700 block mb-1.5">Statut Actuel</label>
+            <select id="modalEtalStatus" class="w-full border border-brand-peachDark rounded-2xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange bg-white font-semibold">
+              <option value="open">Ouvert</option>
+              <option value="busy">Rush / Chargé</option>
+              <option value="closed">Fermé / Repos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 pt-3">
+          <button type="submit"
+            class="flex-1 bg-brand-orange hover:bg-brand-orangeHover text-white font-black text-xs py-3 rounded-2xl shadow-md shadow-brand-orange/20 transition-all hover:scale-[1.02] active:scale-95">
+            💾 Enregistrer l'Étal
+          </button>
+          <button type="button" onclick="closeAddEtalModal()"
+            class="px-5 border border-brand-peachDark text-stone-600 font-bold text-xs py-3 rounded-2xl hover:bg-brand-peachLight transition-colors">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION FLOTTANT -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-brand-dark text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 border border-stone-800">
+      <span class="text-brand-orange text-base">✨</span>
+      <span id="toastNotificationText">Notification</span>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- LOGIQUE JAVASCRIPT : NAVIGATION & SÉLECTION COMPLÈTE        -->
+  <!-- ============================================================ -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. GESTION DES SECTIONS & SÉLECTION DANS LA SIDEBAR
+    // -------------------------------------------------------------
+    const sections = ['dashboard', 'etals', 'vendeuses', 'commandes', 'analytics', 'partenariats', 'settings'];
+
+    function showSection(sectionId) {
+      sections.forEach(s => {
+        const sectionEl = document.getElementById('section-' + s);
+        const navEl = document.getElementById('nav-' + s);
+        if (sectionEl) {
+          sectionEl.classList.toggle('hidden', s !== sectionId);
+        }
+        if (navEl) {
+          navEl.classList.toggle('active', s === sectionId);
+        }
+      });
+
+      // Fermer automatiquement la sidebar sur mobile
+      if (window.innerWidth < 1024) {
+        closeSidebar();
+      }
+
+      // Initialiser le graphique mensuel lors du basculement sur Analytics
+      if (sectionId === 'analytics') {
+        setTimeout(initMonthChart, 150);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 2. SÉLECTION INTERACTIVE DES ÉLÉMENTS (QUAND ON CLIQUE, ÇA SÉLECTIONNE)
+    // -------------------------------------------------------------
+    let currentSelectedElement = null;
+
+    function selectStatCard(cardElement, filterType) {
+      // Retirer la sélection sur toutes les cartes stats (l'orange quitte les autres cartes)
+      document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('selected-stat'));
+      // L'orange se déplace instantanément sur la carte cliquée
+      cardElement.classList.add('selected-stat');
+      
+      const labelEl = cardElement.querySelector('.stat-label');
+      const valEl = cardElement.querySelector('.stat-value');
+      const title = labelEl ? labelEl.textContent.trim() : "Métrique";
+      const val = valEl ? valEl.textContent.trim() : "";
+      
+      showSelectionFeedback(`Statistique sélectionnée : "${title}" (${val})`);
+
+      // Si on filtre, synchroniser avec les pilules du tableau des étals
+      if (filterType && filterType !== 'gps') {
+        const matchingPill = document.querySelector(`#etalsFilterContainer button[onclick*="'${filterType}'"]`);
+        filterEtalsTable(filterType, matchingPill, false);
+      }
+    }
+
+    function selectTableRow(rowElement, id) {
+      // Dé-sélectionner toutes les lignes
+      document.querySelectorAll('#etalsTableBody tr').forEach(r => r.classList.remove('selected-row'));
+      // Sélectionner la ligne cliquée
+      rowElement.classList.add('selected-row');
+
+      const etalName = rowElement.querySelector('.font-black').textContent.trim();
+      showSelectionFeedback(`Étal sélectionné : "${etalName}" (Ligne #${id})`);
+    }
+
+    function selectItemCard(cardElement, itemName) {
+      // Dé-sélectionner les cartes du même conteneur parent
+      const parent = cardElement.parentElement;
+      if (parent) {
+        parent.querySelectorAll('.selectable-card').forEach(c => c.classList.remove('selected-item'));
+      }
+      cardElement.classList.add('selected-item');
+      showSelectionFeedback(`Élément sélectionné : "${itemName}"`);
+    }
+
+    function selectAlertCard(cardElement, alertTitle) {
+      document.querySelectorAll('.selectable-card').forEach(c => c.classList.remove('selected-item'));
+      cardElement.classList.add('selected-item');
+      showSelectionFeedback(`Alerte sélectionnée : "${alertTitle}"`);
+    }
+
+    function showSelectionFeedback(message) {
+      const bar = document.getElementById('selectionFeedbackBar');
+      const text = document.getElementById('selectionFeedbackText');
+      if (bar && text) {
+        text.textContent = message;
+        bar.classList.remove('hidden');
+      }
+      showNotificationToast(message);
+    }
+
+    function clearAllSelections() {
+      // Réinitialiser la sélection des stat cards sur la première (Total)
+      document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('selected-stat'));
+      const defaultStat = document.getElementById('statCard-total');
+      if (defaultStat) defaultStat.classList.add('selected-stat');
+
+      document.querySelectorAll('.selected-row').forEach(r => r.classList.remove('selected-row'));
+      document.querySelectorAll('.selected-item').forEach(c => c.classList.remove('selected-item'));
+      const bar = document.getElementById('selectionFeedbackBar');
+      if (bar) bar.classList.add('hidden');
+    }
+
+    // -------------------------------------------------------------
+    // 3. FILTRES DU TABLEAU DES ÉTALS
+    // -------------------------------------------------------------
+    function filterEtalsTable(filterValue, pillElement, syncStatCard = true) {
+      // Mettre à jour l'apparence des pilules (l'orange se déplace sur la pilule active)
+      if (pillElement) {
+        document.querySelectorAll('#etalsFilterContainer .filter-pill').forEach(p => p.classList.remove('active'));
+        pillElement.classList.add('active');
+      }
+
+      // Synchroniser également avec les cartes stats si applicable
+      if (syncStatCard) {
+        if (filterValue === 'all') {
+          const c = document.getElementById('statCard-total');
+          if (c) {
+            document.querySelectorAll('.stat-card').forEach(x => x.classList.remove('selected-stat'));
+            c.classList.add('selected-stat');
+          }
+        } else if (filterValue === 'open') {
+          const c = document.getElementById('statCard-open');
+          if (c) {
+            document.querySelectorAll('.stat-card').forEach(x => x.classList.remove('selected-stat'));
+            c.classList.add('selected-stat');
+          }
+        } else if (filterValue === 'closed') {
+          const c = document.getElementById('statCard-closed');
+          if (c) {
+            document.querySelectorAll('.stat-card').forEach(x => x.classList.remove('selected-stat'));
+            c.classList.add('selected-stat');
+          }
+        }
+      }
+
+      const rows = document.querySelectorAll('#etalsTableBody tr');
+      rows.forEach(row => {
+        const commune = row.getAttribute('data-commune');
+        const status = row.getAttribute('data-status');
+
+        if (filterValue === 'all') {
+          row.style.display = '';
+        } else if (filterValue === 'open') {
+          row.style.display = (status === 'open') ? '' : 'none';
+        } else if (filterValue === 'closed') {
+          row.style.display = (status === 'closed') ? '' : 'none';
+        } else {
+          // Filtre par commune
+          row.style.display = (commune && commune.toLowerCase().includes(filterValue.toLowerCase())) ? '' : 'none';
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 4. RECHERCHE GLOBALE
+    // -------------------------------------------------------------
+    function handleGlobalSearch(event) {
+      const term = event.target.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#etalsTableBody tr');
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 5. TOAST NOTIFICATION
+    // -------------------------------------------------------------
+    let toastTimeout = null;
+    function showNotificationToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastNotificationText');
+      if (!toast || !text) return;
+
+      text.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2600);
+    }
+
+    // -------------------------------------------------------------
+    // 6. SIDEBAR MOBILE DRAWER
+    // -------------------------------------------------------------
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('sidebarOverlay');
+      if (sb && ov) {
+        sb.classList.toggle('closed');
+        ov.classList.toggle('hidden');
+      }
+    }
+    function closeSidebar() {
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('sidebarOverlay');
+      if (sb && ov) {
+        sb.classList.add('closed');
+        ov.classList.add('hidden');
+      }
+    }
+    if (window.innerWidth < 1024) {
+      closeSidebar();
+    }
+
+    // -------------------------------------------------------------
+    // 7. MODAL ÉTAL (AJOUT / ÉDITION)
+    // -------------------------------------------------------------
+    function openAddEtalModal() {
+      document.getElementById('modalEtalTitle').textContent = "Ajouter un Étal Street-Food";
+      document.getElementById('modalEtalName').value = "";
+      document.getElementById('modalEtalPrice').value = "";
+      document.getElementById('modalEtalVendor').value = "";
+      document.getElementById('addEtalModal').classList.remove('hidden');
+    }
+    function editEtal(id) {
+      const row = document.getElementById('row-etal-' + id);
+      if (row) {
+        selectTableRow(row, id);
+        const name = row.querySelector('.font-black').textContent.trim();
+        document.getElementById('modalEtalTitle').textContent = "Modifier : " + name;
+        document.getElementById('modalEtalName').value = name;
+        document.getElementById('addEtalModal').classList.remove('hidden');
+      }
+    }
+    function closeAddEtalModal() {
+      document.getElementById('addEtalModal').classList.add('hidden');
+    }
+    function saveEtal() {
+      closeAddEtalModal();
+      showNotificationToast("Étal enregistré avec succès sur Abidjan !");
+    }
+
+    function exportDataCSV() {
+      showNotificationToast("Export CSV des 158 étals téléchargé !");
+    }
+
+    // -------------------------------------------------------------
+    // 8. HORLOGE UPTIME
+    // -------------------------------------------------------------
+    let uptimeSeconds = 1420;
+    let uptimeRunning = true;
+    setInterval(() => {
+      if (!uptimeRunning) return;
+      uptimeSeconds++;
+      const h = String(Math.floor(uptimeSeconds / 3600)).padStart(2, '0');
+      const m = String(Math.floor((uptimeSeconds % 3600) / 60)).padStart(2, '0');
+      const s = String(uptimeSeconds % 60).padStart(2, '0');
+      const clockEl = document.getElementById('uptimeClock');
+      if (clockEl) clockEl.textContent = `${h}:${m}:${s}`;
+    }, 1000);
+
+    function toggleUptime() {
+      uptimeRunning = !uptimeRunning;
+      const icon = document.getElementById('uptimeIcon');
+      if (icon) {
+        icon.setAttribute('data-lucide', uptimeRunning ? 'pause' : 'play');
+        lucide.createIcons();
+      }
+      showNotificationToast(uptimeRunning ? "Chronomètre repris" : "Chronomètre en pause");
+    }
+
+    // -------------------------------------------------------------
+    // 9. GRAPHIQUE FRÉQUENTATION SEMAINE (CHART.JS - PALETTE YASSOI)
+    // -------------------------------------------------------------
+    let weekChartInstance = null;
+
+    function initWeekChart() {
+      const ctx = document.getElementById('weekChart');
+      if (!ctx) return;
+      
+      weekChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+          datasets: [{
+            label: 'Itinéraires GPS',
+            data: [210, 185, 342, 268, 310, 420, 195],
+            backgroundColor: (context) => {
+              const i = context.dataIndex;
+              // Samedi (pic) en Orange vif, Mercredi en orange moyen, autres en pêche douce
+              return i === 5 ? '#E8590C' : (i === 2 ? '#F97316' : '#FCD7C4');
+            },
+            borderRadius: 12,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1C1917',
+              titleFont: { family: 'Plus Jakarta Sans', weight: 'bold' },
+              bodyFont: { family: 'Plus Jakarta Sans' },
+              cornerRadius: 10,
+              padding: 10,
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', weight: '700', size: 11 }, color: '#78716C' }
+            },
+            y: { display: false, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function changeChartPeriod(btn, period) {
+      document.querySelectorAll('.period-btn').forEach(b => {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      if (!weekChartInstance) return;
+      if (period === 'semaine') {
+        weekChartInstance.data.labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        weekChartInstance.data.datasets[0].data = [210, 185, 342, 268, 310, 420, 195];
+      } else if (period === 'mois') {
+        weekChartInstance.data.labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
+        weekChartInstance.data.datasets[0].data = [1420, 1890, 2140, 2480];
+      } else {
+        weekChartInstance.data.labels = ['T1', 'T2', 'T3', 'T4'];
+        weekChartInstance.data.datasets[0].data = [6200, 8900, 12400, 15800];
+      }
+      weekChartInstance.update();
+      showNotificationToast(`Période sélectionnée : ${period.toUpperCase()}`);
+    }
+
+    // -------------------------------------------------------------
+    // 10. GRAPHIQUE MENSUEL ANALYTICS (CHART.JS - PALETTE YASSOI)
+    // -------------------------------------------------------------
+    let monthChartInstance = null;
+
+    function initMonthChart() {
+      const ctx = document.getElementById('monthChart');
+      if (!ctx || monthChartInstance) return;
+
+      monthChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'],
+          datasets: [{
+            label: 'Activations GPS',
+            data: [1200, 1600, 2100, 2600, 3100, 3800, 4200, 4600, 5100, 5800, 6400, 7200],
+            borderColor: '#E8590C',
+            borderWidth: 3,
+            pointBackgroundColor: '#E8590C',
+            pointBorderColor: '#FFFFFF',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            backgroundColor: 'rgba(232, 89, 12, 0.12)',
+            fill: true,
+            tension: 0.4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1C1917',
+              titleFont: { family: 'Plus Jakarta Sans', weight: 'bold' },
+              bodyFont: { family: 'Plus Jakarta Sans' },
+              cornerRadius: 10,
+              padding: 10,
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', weight: '600', size: 10 }, color: '#78716C' }
+            },
+            y: {
+              grid: { color: 'rgba(252, 215, 196, 0.3)' },
+              border: { display: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, color: '#78716C' }
+            }
+          }
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 11. INITIALISATION AU CHARGEMENT DU DOM
+    // -------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      setTimeout(initWeekChart, 200);
+
+      // Fermeture du modal au clic en dehors
+      const modal = document.getElementById('addEtalModal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeAddEtalModal();
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

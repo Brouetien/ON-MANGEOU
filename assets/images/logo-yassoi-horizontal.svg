@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" width="100%" height="100%">
+  <defs>
+    <!-- Dégradé Flammes -->
+    <linearGradient id="fireGradH" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#E83A14" />
+      <stop offset="60%" stop-color="#FF5722" />
+      <stop offset="100%" stop-color="#FF2A00" />
+    </linearGradient>
+
+    <!-- Ombre douce -->
+    <filter id="softGlowH" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#E83A14" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- ======================================================== -->
+  <!-- 1. BLOC EMBLÈME GAUCHE : MARMITE EN FEU & SPATULE (0 à 100) -->
+  <!-- ======================================================== -->
+  <g transform="translate(6, 4) scale(0.18)">
+    <!-- Spatule inclinée -->
+    <g transform="rotate(-18 250 250)">
+      <rect x="85" y="222" width="160" height="18" rx="9" fill="#D32F2F" />
+      <rect x="350" y="212" width="65" height="42" rx="8" fill="#D32F2F" />
+      <rect x="362" y="218" width="7" height="30" rx="3.5" fill="#FFFFFF" />
+      <rect x="378" y="218" width="7" height="30" rx="3.5" fill="#FFFFFF" />
+      <rect x="394" y="218" width="7" height="30" rx="3.5" fill="#FFFFFF" />
+    </g>
+
+    <!-- Grandes flammes ardentes -->
+    <path d="M 250,70 
+             C 255,95 240,115 235,130 
+             C 220,110 215,85 228,60 
+             C 200,85 195,130 210,165 
+             C 185,150 178,125 182,105 
+             C 160,135 160,175 185,205 
+             C 155,190 148,165 152,145 
+             C 125,185 130,235 165,270 
+             C 150,265 140,250 142,235 
+             C 120,265 125,310 160,335
+             L 340,335
+             C 375,310 380,265 358,235 
+             C 360,250 350,265 335,270 
+             C 370,235 375,185 348,145 
+             C 352,165 345,190 315,205 
+             C 340,175 340,135 318,105 
+             C 322,125 315,150 290,165 
+             C 305,130 300,85 272,60 
+             C 285,85 280,110 265,130 
+             C 260,115 245,95 250,70 Z" 
+          fill="url(#fireGradH)" filter="url(#softGlowH)" />
+
+    <!-- Coeur chaud de flamme -->
+    <path d="M 250,120 C 260,150 248,175 238,195 C 225,170 232,140 250,120 Z" fill="#FFE082" />
+
+    <!-- Marmite Noire & anses -->
+    <rect x="42" y="358" width="60" height="20" rx="10" fill="none" stroke="#12100E" stroke-width="9" />
+    <rect x="398" y="358" width="60" height="20" rx="10" fill="none" stroke="#12100E" stroke-width="9" />
+    <rect x="75" y="355" width="350" height="14" rx="7" fill="#12100E" />
+    <path d="M 85,362 C 95,445 185,465 250,465 C 315,465 405,445 415,362 Z" fill="#12100E" />
+    <path d="M 120,380 C 125,415 160,435 195,442 C 170,432 140,412 135,385 Z" fill="#FFFFFF" opacity="0.12" />
+  </g>
+
+  <!-- ======================================================== -->
+  <!-- 2. BLOC TYPOGRAPHIQUE DROITE : YASSOI / ON MANGE OÙ ? -->
+  <!-- ======================================================== -->
+  <g transform="translate(102, 0)">
+    <!-- YASSOI (Ligne 1 - Majuscules puissantes & braise) -->
+    <text x="0" y="46" 
+          font-family="'Plus Jakarta Sans', 'Arial Black', Impact, sans-serif" 
+          font-size="40" 
+          font-weight="900" 
+          font-style="italic" 
+          letter-spacing="1.5" 
+          fill="#E83A14">
+      YASSOI
+    </text>
+
+    <!-- Pastille ou Flamme décorative inline -->
+    <circle cx="178" cy="32" r="6" fill="#FF9800" />
+    <circle cx="178" cy="32" r="3" fill="#FFE082" />
+
+    <!-- ON MANGE OÙ ? (Ligne 2 - Typographie affirmée terracotta/charcoal) -->
+    <text x="0" y="80" 
+          font-family="'Plus Jakarta Sans', sans-serif" 
+          font-size="24" 
+          font-weight="900" 
+          letter-spacing="0.5" 
+          fill="#1C1917">
+      ON MANGE OÙ <tspan fill="#E8590C">?</tspan>
+    </text>
+
+    <!-- Baseline discrète Street-food Abidjan -->
+    <text x="2" y="95" 
+          font-family="'Plus Jakarta Sans', sans-serif" 
+          font-size="10" 
+          font-weight="800" 
+          letter-spacing="2.5" 
+          fill="#94A3B8" 
+          text-transform="uppercase">
+      STREET-FOOD ABIDJAN
+    </text>
+  </g>
+</svg>
